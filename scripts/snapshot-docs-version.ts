@@ -10,6 +10,8 @@ const force = process.argv.includes("--force");
 
 const source = path.join(root, "apps/docs/latest");
 const target = path.join(root, "apps/docs/versions", tag);
+const LATEST_INSTALL_COMMAND_RE =
+  /curl -fsSL (?<origin>https?:\/\/[^/\s]+)\/install\.sh \| sh/gu;
 
 try {
   await fs.access(target);
@@ -42,7 +44,13 @@ async function rewriteVersionLinks(dir: string): Promise<void> {
     const content = await fs.readFile(file, "utf8");
     const rewritten = content
       .replaceAll('href="/latest/', `href="/versions/${tag}/`)
-      .replaceAll("](/latest/", `](/versions/${tag}/`);
+      .replaceAll("](/latest/", `](/versions/${tag}/`)
+      .replace(
+        LATEST_INSTALL_COMMAND_RE,
+        (_command: string, origin: string) =>
+          `curl -fsSL ${origin}/releases/${tag}/install.sh | sh`
+      )
+      .replaceAll("Latest CLI version:", "CLI version:");
     if (rewritten !== content) {
       await fs.writeFile(file, rewritten);
     }

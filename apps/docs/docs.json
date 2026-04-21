@@ -29,66 +29,9 @@
     },
     "versions": [
       {
-        "version": "Latest",
+        "version": "v0.1.1",
         "default": true,
         "tag": "Latest",
-        "groups": [
-          {
-            "group": "Get started",
-            "icon": "rocket",
-            "root": "latest/index",
-            "directory": "card",
-            "pages": [
-              "latest/install",
-              "latest/auth"
-            ]
-          },
-          {
-            "group": "Book House Help",
-            "icon": "calendar-search",
-            "root": "latest/househelp/index",
-            "directory": "accordion",
-            "pages": [
-              "latest/househelp/options",
-              "latest/househelp/find",
-              "latest/househelp/book",
-              "latest/househelp/watches"
-            ]
-          },
-          {
-            "group": "Manage",
-            "icon": "settings",
-            "root": "latest/manage",
-            "directory": "accordion",
-            "pages": [
-              "latest/addresses",
-              "latest/payments",
-              "latest/bookings"
-            ]
-          },
-          {
-            "group": "AI agents",
-            "icon": "bot",
-            "root": "latest/agents/index",
-            "directory": "accordion",
-            "pages": [
-              "latest/agents/codex",
-              "latest/agents/claude",
-              {
-                "group": "MCP",
-                "icon": "plug",
-                "root": "latest/agents/mcp",
-                "directory": "accordion",
-                "pages": [
-                  "latest/reference/mcp-tools"
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "version": "v0.1.1",
         "groups": [
           {
             "group": "Get started",
@@ -138,6 +81,63 @@
                 "directory": "accordion",
                 "pages": [
                   "versions/v0.1.1/reference/mcp-tools"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "version": "v0.1.0",
+        "groups": [
+          {
+            "group": "Get started",
+            "icon": "rocket",
+            "root": "versions/v0.1.0/index",
+            "directory": "card",
+            "pages": [
+              "versions/v0.1.0/install",
+              "versions/v0.1.0/auth"
+            ]
+          },
+          {
+            "group": "Book House Help",
+            "icon": "calendar-search",
+            "root": "versions/v0.1.0/househelp/index",
+            "directory": "accordion",
+            "pages": [
+              "versions/v0.1.0/househelp/options",
+              "versions/v0.1.0/househelp/find",
+              "versions/v0.1.0/househelp/book",
+              "versions/v0.1.0/househelp/watches"
+            ]
+          },
+          {
+            "group": "Manage",
+            "icon": "settings",
+            "root": "versions/v0.1.0/manage",
+            "directory": "accordion",
+            "pages": [
+              "versions/v0.1.0/addresses",
+              "versions/v0.1.0/payments",
+              "versions/v0.1.0/bookings"
+            ]
+          },
+          {
+            "group": "AI agents",
+            "icon": "bot",
+            "root": "versions/v0.1.0/agents/index",
+            "directory": "accordion",
+            "pages": [
+              "versions/v0.1.0/agents/codex",
+              "versions/v0.1.0/agents/claude",
+              {
+                "group": "MCP",
+                "icon": "plug",
+                "root": "versions/v0.1.0/agents/mcp",
+                "directory": "accordion",
+                "pages": [
+                  "versions/v0.1.0/reference/mcp-tools"
                 ]
               }
             ]

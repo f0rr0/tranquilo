@@ -186,18 +186,36 @@ describe("agent-facing docs", () => {
     const docsConfig = JSON.parse(readRepoFile("../docs/docs.json")) as {
       navigation: {
         versions: Array<{
+          default?: boolean;
           groups: Array<{
             directory?: string;
             group: string;
             pages: unknown[];
             root?: string;
           }>;
+          tag?: string;
+          version: string;
         }>;
       };
     };
+    const currentVersion = `v${PACKAGE_METADATA.version}`;
     const manageGroup = docsConfig.navigation.versions[0]?.groups.find(
       (group) => group.group === "Manage"
     );
+
+    expect(docsConfig.navigation.versions[0]).toMatchObject({
+      default: true,
+      tag: "Latest",
+      version: currentVersion,
+    });
+    expect(
+      docsConfig.navigation.versions.map((version) => version.version)
+    ).toContain("v0.1.0");
+    expect(
+      docsConfig.navigation.versions.some(
+        (version) => version.version === "Latest"
+      )
+    ).toBe(false);
 
     expect(find).toContain("## Flags");
     expect(find).toContain("--duration-order");
@@ -218,7 +236,7 @@ describe("agent-facing docs", () => {
     expect(manage).toContain("saved addresses");
     expect(manageGroup).toMatchObject({
       directory: "accordion",
-      root: "latest/manage",
+      root: `versions/${currentVersion}/manage`,
     });
     expect(auth).toContain("### Login flags");
     expect(auth).toContain("--no-interactive");
@@ -239,6 +257,7 @@ describe("agent-facing docs", () => {
   it("renders angle-bracket placeholders as code, not HTML entities", () => {
     const generatedDocs = [
       ...readRepoTextFiles("../docs/latest"),
+      ...readRepoTextFiles("../docs/versions"),
       {
         content: readRepoFile("../docs/skill.md"),
         file: "../docs/skill.md",
@@ -262,6 +281,12 @@ describe("agent-facing docs", () => {
       "`tranquilo househelp payment-handoff <orderId> --json --no-interactive`"
     );
     expect(readRepoFile("../docs/skill.md")).toContain("`book watch <id>`");
+    expect(readRepoFile("../docs/versions/v0.1.0/install.mdx")).toContain(
+      "https://tranquilo-ai.vercel.app/releases/v0.1.0/install.sh"
+    );
+    expect(readRepoFile("../docs/versions/v0.1.1/install.mdx")).not.toContain(
+      "/releases/v0.1.1/releases/v0.1.1"
+    );
   });
 
   it("keeps the maintainer skill aligned with release and agent-doc rules", () => {

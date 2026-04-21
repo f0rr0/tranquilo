@@ -2,12 +2,10 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { AsyncEntry } from "@napi-rs/keyring";
 import { fallbackSecretPath } from "./paths";
 import type { Credentials } from "./types";
 
 const SERVICE = "tranquilo";
-const ACCOUNT = "default";
 
 function keyMaterial(): Buffer {
   const user = os.userInfo().username;
@@ -76,34 +74,17 @@ export async function loadCredentials(): Promise<Credentials | null> {
     };
   }
 
-  try {
-    const value = await new AsyncEntry(SERVICE, ACCOUNT).getPassword();
-    return value ? (JSON.parse(value) as Credentials) : null;
-  } catch {
-    return readFallback();
-  }
+  return await readFallback();
 }
 
 export async function saveCredentials(
   credentials: Credentials
-): Promise<"keyring" | "encrypted-file"> {
-  const value = JSON.stringify(credentials);
-  try {
-    await new AsyncEntry(SERVICE, ACCOUNT).setPassword(value);
-    await deleteFallback();
-    return "keyring";
-  } catch {
-    await writeFallback(credentials);
-    return "encrypted-file";
-  }
+): Promise<"encrypted-file"> {
+  await writeFallback(credentials);
+  return "encrypted-file";
 }
 
 export async function clearCredentials(): Promise<void> {
-  try {
-    await new AsyncEntry(SERVICE, ACCOUNT).deletePassword();
-  } catch {
-    // key may not exist or keyring may be unavailable
-  }
   await deleteFallback();
 }
 
@@ -111,14 +92,6 @@ export async function credentialStorageStatus(): Promise<{
   keyringAvailable: boolean;
   fallbackFileExists: boolean;
 }> {
-  let keyringAvailable = false;
-  try {
-    await new AsyncEntry(SERVICE, "__healthcheck__").getPassword();
-    keyringAvailable = true;
-  } catch (error) {
-    keyringAvailable = String((error as Error).message).includes("NoEntry");
-  }
-
   let fallbackFileExists = false;
   try {
     await fs.access(fallbackSecretPath());
@@ -126,5 +99,5 @@ export async function credentialStorageStatus(): Promise<{
   } catch {
     fallbackFileExists = false;
   }
-  return { keyringAvailable, fallbackFileExists };
+  return { keyringAvailable: false, fallbackFileExists };
 }

@@ -19,7 +19,13 @@ import {
   househelpWatchCreateAction,
   loginAction,
 } from "../src/cli-actions";
-import type { JsonObject } from "../src/types";
+import {
+  clearCredentials,
+  credentialStorageStatus,
+  loadCredentials,
+  saveCredentials,
+} from "../src/storage";
+import type { Credentials, JsonObject } from "../src/types";
 
 const ANSI_PATTERN = new RegExp(
   `${String.fromCharCode(27)}\\[[0-?]*[ -/]*[@-~]`,
@@ -511,6 +517,25 @@ describe("CLI integration against a mocked API", () => {
     expect(withSecrets.secretsChecked).toBe(true);
     expect(withSecrets.authenticated).toBe(true);
     expect(withSecrets.storage).toBeDefined();
+  });
+
+  it("stores credentials in the encrypted local file", async () => {
+    delete process.env.TRANQUILO_TOKEN;
+    delete process.env.TRANQUILO_REFRESH_TOKEN;
+    const credentials: Credentials = {
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      savedAt: "2026-04-21T00:00:00.000Z",
+      userId: "user-1",
+    };
+
+    await clearCredentials();
+    await expect(saveCredentials(credentials)).resolves.toBe("encrypted-file");
+    await expect(loadCredentials()).resolves.toEqual(credentials);
+    await expect(credentialStorageStatus()).resolves.toEqual({
+      fallbackFileExists: true,
+      keyringAvailable: false,
+    });
   });
 
   it("fails login in no-interactive mode before prompting or sending OTP", async () => {

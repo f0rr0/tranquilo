@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { mainCommand } from "../apps/cli/src/cli";
@@ -73,6 +74,10 @@ function repositorySlug(): string {
 const baseUrl = deploymentBaseUrl();
 const repository = repositorySlug();
 const VERSION_DIR_RE = /^v\d+\.\d+\.\d+$/;
+const VERSION_PREFIX_RE = /^v/u;
+const LOCAL_RELEASE_LABEL = "local development build";
+const LATEST_DOCS_RELEASE_RE =
+  /(?:Latest )?CLI version: `(?<version>[^`]+)`[\s\S]*?Released: (?<releasedAt>[^\n]+)/u;
 const DOC_PAGE_PATHS = [
   "index",
   "install",
@@ -113,10 +118,55 @@ function tag(version = PACKAGE_METADATA.version): string {
   return version.startsWith("v") ? version : `v${version}`;
 }
 
+function versionParts(version: string): [number, number, number] {
+  const parts = version.replace(VERSION_PREFIX_RE, "").split(".").map(Number);
+  return [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
+}
+
+function compareVersionTags(left: string, right: string): number {
+  const leftParts = versionParts(left);
+  const rightParts = versionParts(right);
+  for (let index = 0; index < 3; index += 1) {
+    const diff = (leftParts[index] ?? 0) - (rightParts[index] ?? 0);
+    if (diff !== 0) {
+      return diff;
+    }
+  }
+  return 0;
+}
+
+function existingReleasedAtForVersion(version: string): string | null {
+  const candidates = [
+    path.join(root, "apps/docs/versions", tag(version), "index.mdx"),
+    path.join(root, "apps/docs/latest/index.mdx"),
+  ];
+  for (const candidate of candidates) {
+    try {
+      const text = fsSync.readFileSync(candidate, "utf8");
+      const match = text.match(LATEST_DOCS_RELEASE_RE);
+      const releasedAt = match?.groups?.releasedAt?.trim();
+      if (
+        match?.groups?.version === version &&
+        releasedAt &&
+        releasedAt !== LOCAL_RELEASE_LABEL
+      ) {
+        return releasedAt;
+      }
+    } catch {
+      // This file does not exist during first-time generation.
+    }
+  }
+  return null;
+}
+
 function releaseJson(): ReleaseJson {
   const tagName = tag();
-  const releasedAt = process.env.TRANQUILO_RELEASED_AT ?? null;
+  const releasedAt =
+    process.env.TRANQUILO_RELEASED_AT ??
+    existingReleasedAtForVersion(PACKAGE_METADATA.version);
   const channel = releasedAt ? "release" : "local";
+  const docsPath =
+    channel === "release" ? `/docs/versions/${tagName}` : "/docs/latest";
 
   return {
     assets: [
@@ -124,7 +174,7 @@ function releaseJson(): ReleaseJson {
       "checksums.txt",
     ],
     channel,
-    docsUrl: `${baseUrl}/docs/latest`,
+    docsUrl: `${baseUrl}${docsPath}`,
     exactInstallCommand: `curl -fsSL ${baseUrl}/releases/${tagName}/install.sh | sh`,
     installCommand: `curl -fsSL ${baseUrl}/install.sh | sh`,
     releaseNotesUrl: `https://github.com/${repository}/releases/tag/${tagName}`,
@@ -324,7 +374,7 @@ function installPage(metadata: ReleaseJson): string {
     title: "Install",
   })}# Install Tranquilo
 
-Latest CLI version: ${code(metadata.version)}
+CLI version: ${code(metadata.version)}
 
 ${sh(metadata.installCommand)}
 
@@ -361,7 +411,7 @@ ${flagRows(["install-agent"], { includePositional: true })}
 }
 
 function indexPage(metadata: ReleaseJson): string {
-  const released = metadata.releasedAt ?? "local development build";
+  const released = metadata.releasedAt ?? LOCAL_RELEASE_LABEL;
   return `${frontmatter({
     description:
       "Local CLI and MCP wrapper for Pronto House Help booking flows.",
@@ -375,7 +425,7 @@ Tranquilo is the local CLI and MCP wrapper around Pronto House Help booking flow
   There is no user-facing Tranquilo app. When referring to the mobile app, say Pronto app.
 </Note>
 
-Latest CLI version: ${code(metadata.version)}
+CLI version: ${code(metadata.version)}
 
 Released: ${released}
 
@@ -405,7 +455,7 @@ function authPage(): string {
     title: "Auth",
   })}# Auth
 
-Tranquilo authenticates with Pronto using the phone OTP flow captured from the app. Credentials are stored in OS credential storage when available, with non-secret config in the local app config directory.
+Tranquilo authenticates with Pronto using the phone OTP flow captured from the app. Credentials are stored in an encrypted local file under Tranquilo's state directory, with non-secret config in the local app config directory.
 
 <Warning>
   Do not paste OTPs into AI chat. If an agent finds you are not logged in, it should tell you to run ${code("tranquilo login")} locally.
@@ -777,27 +827,31 @@ See [MCP tools](/latest/reference/mcp-tools) for the generated tool list.
 }
 
 function llmsText(metadata: ReleaseJson): string {
+  const docsPath = metadata.docsUrl.startsWith(baseUrl)
+    ? metadata.docsUrl.slice(baseUrl.length)
+    : "/docs/latest";
+  const page = (pathName: string) => `${docsPath}/${pathName}`;
   const lines = [
     "# Tranquilo",
     "",
     `Latest version: ${metadata.version}`,
     `Install: ${baseUrl}/install.sh`,
-    `Docs: ${baseUrl}/docs/latest`,
+    `Docs: ${metadata.docsUrl}`,
     `Skill: ${baseUrl}/docs/skill.md`,
     "",
     "## Pages",
     "",
-    "- Overview: /docs/latest",
-    "- Install: /docs/latest/install",
-    "- Auth: /docs/latest/auth",
-    "- Book House Help: /docs/latest/househelp",
-    "- Find slots: /docs/latest/househelp/find",
-    "- Watches: /docs/latest/househelp/watches",
-    "- Manage: /docs/latest/manage",
-    "- Addresses: /docs/latest/addresses",
-    "- Payments: /docs/latest/payments",
-    "- Agent usage: /docs/latest/agents",
-    "- MCP tools: /docs/latest/reference/mcp-tools",
+    `- Overview: ${docsPath}`,
+    `- Install: ${page("install")}`,
+    `- Auth: ${page("auth")}`,
+    `- Book House Help: ${page("househelp")}`,
+    `- Find slots: ${page("househelp/find")}`,
+    `- Watches: ${page("househelp/watches")}`,
+    `- Manage: ${page("manage")}`,
+    `- Addresses: ${page("addresses")}`,
+    `- Payments: ${page("payments")}`,
+    `- Agent usage: ${page("agents")}`,
+    `- MCP tools: ${page("reference/mcp-tools")}`,
     "",
   ];
   return lines.join("\n");
@@ -867,12 +921,13 @@ async function versionHasDocs(version: string): Promise<boolean> {
 }
 
 async function docsJson(): Promise<string> {
+  const currentTag = tag();
   const versionsDir = path.join(root, "apps/docs/versions");
   const allVersions = (
     await fs.readdir(versionsDir).catch(() => [] as string[])
   )
     .filter((entry) => VERSION_DIR_RE.test(entry))
-    .sort()
+    .sort(compareVersionTags)
     .reverse();
   const versionTags: string[] = [];
   for (const version of allVersions) {
@@ -880,6 +935,33 @@ async function docsJson(): Promise<string> {
       versionTags.push(version);
     }
   }
+  const hasCurrentVersionDocs = versionTags.includes(currentTag);
+  const orderedVersionTags = hasCurrentVersionDocs
+    ? [currentTag, ...versionTags.filter((version) => version !== currentTag)]
+    : versionTags;
+  const versions = hasCurrentVersionDocs
+    ? orderedVersionTags.map((version) => ({
+        version,
+        ...(version === currentTag
+          ? {
+              default: true,
+              tag: "Latest",
+            }
+          : {}),
+        groups: navGroups(`versions/${version}`),
+      }))
+    : [
+        {
+          version: "Latest",
+          default: true,
+          tag: "Latest",
+          groups: navGroups("latest"),
+        },
+        ...orderedVersionTags.map((version) => ({
+          version,
+          groups: navGroups(`versions/${version}`),
+        })),
+      ];
   return `${JSON.stringify(
     {
       $schema: "https://mintlify.com/docs.json",
@@ -911,18 +993,7 @@ async function docsJson(): Promise<string> {
             },
           ],
         },
-        versions: [
-          {
-            version: "Latest",
-            default: true,
-            tag: "Latest",
-            groups: navGroups("latest"),
-          },
-          ...versionTags.map((version) => ({
-            version,
-            groups: navGroups(`versions/${version}`),
-          })),
-        ],
+        versions,
       },
       navbar: {
         links: [

@@ -1,4 +1,4 @@
-import release from "../../../../generated/release.json";
+import release from "../../../../../generated/release.json";
 
 export const dynamic = "force-static";
 

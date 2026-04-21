@@ -7,7 +7,7 @@
     "docs:typegen": "fumadocs-mdx source.config.ts .source",
     "dev": "next dev --port 3000",
     "lint": "ultracite check .",
-    "typecheck": "bun run docs:typegen && tsgo --noEmit -p tsconfig.json",
+    "typecheck": "bun run docs:typegen && next typegen && tsgo --noEmit -p tsconfig.json",
     "test": "vitest run --passWithNoTests",
     "build": "bun run docs:typegen && next build",
     "validate": "bun run lint && bun run typecheck && bun run test && bun run build"

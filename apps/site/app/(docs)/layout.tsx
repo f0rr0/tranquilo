@@ -1,13 +1,13 @@
 import { RootProvider } from "fumadocs-ui/provider/next";
 import type { Metadata } from "next";
-import "./globals.css";
+import "./docs.css";
 
 export const metadata: Metadata = {
-  title: "Tranquilo",
+  title: "Tranquilo Docs",
   description: "CLI and local MCP server for Pronto House Help booking flows.",
 };
 
-export default function RootLayout({
+export default function DocsRootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (

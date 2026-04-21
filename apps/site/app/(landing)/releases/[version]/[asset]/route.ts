@@ -1,4 +1,4 @@
-import { routeResponse } from "../../../lib/install-response";
+import { routeResponse } from "../../../_lib/install-response";
 
 export const dynamic = "force-dynamic";
 

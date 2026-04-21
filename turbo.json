@@ -83,7 +83,7 @@
       ]
     },
     "build": {
-      "dependsOn": ["//#generate:assets", "^build"],
+      "dependsOn": ["//#generate:assets", "typecheck", "^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "!assets/codex-skill/**",

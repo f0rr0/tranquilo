@@ -15,6 +15,15 @@ async function sha256(file: string): Promise<string> {
   return hash.digest("hex");
 }
 
+async function fileExists(file: string): Promise<boolean> {
+  try {
+    await fs.access(file);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function archiveTarget(
   target: ReleaseTarget,
   outDir: string
@@ -91,6 +100,12 @@ async function smokeCurrentBinary(outDir: string): Promise<void> {
     throw new Error("No current-platform release target found.");
   }
   const archive = path.join(outDir, RELEASE_METADATA.archiveName(current));
+  if (!(await fileExists(archive))) {
+    console.warn(
+      `Skipping smoke test because ${path.basename(archive)} was not packaged for this mode.`
+    );
+    return;
+  }
   const workDir = await fs.mkdtemp(path.join(os.tmpdir(), "tranquilo-smoke-"));
   try {
     if (current.os === "win32") {

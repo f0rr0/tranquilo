@@ -34,7 +34,6 @@
     "@inquirer/prompts": "catalog:cli",
     "@js-temporal/polyfill": "catalog:cli",
     "@modelcontextprotocol/server": "catalog:cli",
-    "@napi-rs/keyring": "catalog:cli",
     "@tranquilo/product": "workspace:*",
     "@visulima/tabular": "catalog:cli",
     "citty": "catalog:cli",

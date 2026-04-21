@@ -11,11 +11,11 @@ Use this skill when working inside the Tranquilo repository.
 
 - Run `auth_status` only when testing live Tranquilo behavior; do not require live credentials for release or packaging work.
 - Add a Changesets file for every change that should ship in the next CLI binary release: CLI behavior, MCP tools, shipped agent assets, or release target metadata.
-- Do not add a CLI Changesets file for landing/docs-only changes. Those can deploy to latest docs/landing without creating a new CLI release.
+- Do not add a CLI Changesets file for landing/docs-only changes. Those can deploy docs/landing without creating a new CLI release.
 - CLI releases are manual. After merging release-worthy changes to `main`, run the `release` workflow from the GitHub Actions panel on the `main` branch.
 - Use an explicit no-release Changesets file only when a PR touches release-gated CLI files but should not bump the CLI.
 - Never hand-edit generated release sections in `CHANGELOG.md`; add or update `.changeset/*.md` instead.
-- Mintlify docs are committed source under `apps/docs`: `docs.json`, `latest/**`, `versions/**`, `llms.txt`, and `skill.md`. The release workflow snapshots `latest` into `versions/vX.Y.Z` and commits it so Mintlify can build directly from Git.
+- Mintlify docs are committed source under `apps/docs`: `docs.json`, `latest/**`, `versions/**`, `llms.txt`, and `skill.md`. The `latest/**` tree is the generated working source, while public navigation points at exact `versions/vX.Y.Z` snapshots. The release workflow snapshots `latest` into `versions/vX.Y.Z` and commits it so Mintlify can build directly from Git.
 - Use conventional commit messages that pass commitlint, such as `feat: add release packaging` or `fix: repair PR install route`.
 - Keep Lefthook `pre-commit`, `commit-msg`, and `pre-push` hooks aligned with CI. Pre-push should include the changeset gate, build, release smoke, and actionlint.
 - Keep `packages/product/src/agent-catalog.ts` as the source of truth for MCP tool metadata, agent-safe CLI commands, public docs, API boundaries, and shipped agent assets.

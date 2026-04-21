@@ -1,0 +1,63 @@
+---
+title: "Find slots"
+description: "Find live House Help slots with flexible dates, durations, and time windows."
+icon: "search"
+---
+
+# Find slots
+
+Slot search is read-only. It does not mutate the cart and does not create checkout.
+
+<Tabs>
+  <Tab title="After work">
+```sh
+tranquilo househelp find --duration 60 --preset next-4-days --window after-work
+```
+  </Tab>
+  <Tab title="Exact time">
+```sh
+tranquilo househelp find --duration 60 --exact-date 2026-04-23 --exact-time 13:00 --exact-duration
+```
+  </Tab>
+  <Tab title="Fallback durations">
+```sh
+tranquilo househelp find --duration-order 60,90,30 --preset next-4-days --time-window 18:00-22:00
+```
+  </Tab>
+</Tabs>
+
+## Flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--address-id <id>` | No | Saved address id |
+| `--lat <lat>` | No | Latitude |
+| `--lng <lng>` | No | Longitude |
+| `--duration <duration>` | No | Preferred duration such as 60, 90m, or 1.5h |
+| `--duration-order <60,90,120,30>` | No | Explicit duration fallback order, comma-separated |
+| `--exact-duration` | No | Only search the requested duration |
+| `--date <YYYY-MM-DD>` | No | Single target date |
+| `--exact-date <YYYY-MM-DD>` | No | Exact target date with no date fallback |
+| `--around <YYYY-MM-DD>` | No | Preferred date center for flexible date search |
+| `--flex-days <n>` | No | Days before/after --around |
+| `--from-date <YYYY-MM-DD>` | No | Target date range start |
+| `--to-date <YYYY-MM-DD>` | No | Target date range end |
+| `--preset <preset>` | No | Date preset Allowed values: `today`, `tomorrow`, `next-4-days`, `weekend`. |
+| `--window <window>` | No | Time window preset Allowed values: `smart`, `before-work`, `after-work`, `weekend`, `any`, `custom`. |
+| `--time-window <HH:mm-HH:mm>` | No | Preferred time window; repeatable |
+| `--exact-time <HH:mm>` | No | Exact start time |
+| `--exact-slot <iso>` | No | Exact slot start time |
+| `--limit <n>` | No | Maximum slots to return |
+| `--json` | No | Print JSON |
+| `--no-interactive` | No | Never prompt; fail if more input is required |
+
+## Booking horizon
+
+House Help bookings are only valid for today, tomorrow, and the next two days. Searches reject past times and dates outside that horizon.
+
+## Location precedence
+
+1. Explicit `--lat` and `--lng`.
+2. Explicit `--address-id`.
+3. Active cart delivery address.
+4. Saved profile default or first saved address as fallback.

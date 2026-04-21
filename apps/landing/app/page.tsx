@@ -17,7 +17,7 @@ export default function Page() {
         <nav aria-label="Main" className="nav">
           <div className="brand">Tranquilo</div>
           <div className="links">
-            <a href="/docs/latest">Docs</a>
+            <a href={release.docsUrl}>Docs</a>
             <a href={release.releaseNotesUrl}>Release notes</a>
             <a href="/install.sh">Install script</a>
           </div>

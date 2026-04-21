@@ -69,6 +69,8 @@ jobs:
         run: bun run release:package
       - if: steps.version.outputs.should_release == 'true'
         name: Commit version and tag
+        env:
+          LEFTHOOK: "0"
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

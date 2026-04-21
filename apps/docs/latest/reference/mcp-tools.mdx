@@ -1,0 +1,28 @@
+---
+title: "MCP tools"
+description: "Agent-callable MCP tools exposed by tranquilo mcp."
+icon: "plug"
+---
+
+# MCP tools
+
+Agents should prefer MCP tools over shelling out to the CLI. Mutating tools require explicit user intent and structured arguments.
+
+| Tool | Safety | CLI fallback | Description |
+| --- | --- | --- | --- |
+| `auth_status` | Read-only | MCP only | First tool to call for any Tranquilo, maid, house help, cleaner, slot, address, or booking request. If unauthenticated, return the loginHint and stop. |
+| `addresses_list` | Read-only | `tranquilo addresses list --json --no-interactive` | List saved addresses. |
+| `address_show` | Read-only | MCP only | Show one normalized saved address. |
+| `address_use` | Mutating | MCP only | Set the active delivery/cart address. This does not change a profile-level default address. |
+| `househelp_options` | Read-only | `tranquilo househelp options --json --no-interactive` | Agent-safe: list backend-supported maid/house-help/hourly-cleaner durations and prices for an address. Use this when the user asks for a maid, cleaner, house help, domestic help, or hourly cleaning. |
+| `househelp_find_slots` | Read-only | `tranquilo househelp find --duration 60 --preset next-4-days --window smart --json --no-interactive` | Agent-safe: find ranked maid/house-help/hourly-cleaner slots from natural requests like 'find a maid tomorrow' or 'cleaner after work'. Follow-up corrections replace prior filters. Fallback durations are alternatives; do not book a fallback duration without explicit user confirmation. This does not mutate cart or create checkout. |
+| `househelp_prepare_booking` | Mutating | `tranquilo househelp book --duration 60 --slot "2026-04-23 18:00" --address-id <id> --handoff --json --no-interactive` | Agent-safe hosted/web mutation: create a maid/house-help checkout only from explicit duration and slot, then return a local CLI payment command. Local terminal agents should run the CLI QR flow directly after the user says to book. |
+| `househelp_payment_handoff` | Read-only | `tranquilo househelp payment-handoff <orderId> --json --no-interactive` | Agent-safe hosted/web handoff: return the local terminal command that shows QR, polls payment, and finalizes the booking when run locally. |
+| `bookings_list` | Read-only | `tranquilo bookings list --json --no-interactive` | List bookings using captured status/type presets. |
+| `househelp_watch_create` | Mutating | `tranquilo househelp watch create --duration 60 --preset next-4-days --time-window 18:00-22:00 --address-id <id> --json --no-interactive` | Agent-safe mutation: create a notify-only House Help slot watch. It never creates checkout automatically; when a slot is found, tell the user to inspect/book the watch locally. |
+| `househelp_watch_list` | Read-only | `tranquilo househelp watch list --json --no-interactive` | Agent-safe: list local House Help slot watches. |
+| `househelp_watch_show` | Read-only | `tranquilo househelp watch show <watchId> --json --no-interactive` | Agent-safe: show one local House Help slot watch. |
+| `househelp_watch_pause` | Mutating | MCP only | Agent-safe mutation: pause one local House Help watch. |
+| `househelp_watch_resume` | Mutating | MCP only | Agent-safe mutation: resume one local House Help watch. |
+| `househelp_watch_delete` | Mutating | MCP only | Agent-safe mutation: delete one local House Help watch. |
+| `househelp_watch_run_now` | Mutating | MCP only | Agent-safe mutation: run one local House Help watch now. A found match is persisted and notified; checkout is never created automatically. |

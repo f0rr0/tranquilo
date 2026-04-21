@@ -1,0 +1,100 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Tranquilo",
+  "description": "CLI and local MCP docs for Pronto House Help booking flows.",
+  "colors": {
+    "primary": "#0F766E"
+  },
+  "icons": {
+    "library": "lucide"
+  },
+  "metadata": {
+    "timestamp": true
+  },
+  "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Install",
+          "icon": "download",
+          "href": "https://tranquilo-ai.vercel.app"
+        },
+        {
+          "anchor": "GitHub",
+          "icon": "github",
+          "href": "https://github.com/f0rr0/tranquilo"
+        }
+      ]
+    },
+    "versions": [
+      {
+        "version": "Latest",
+        "default": true,
+        "tag": "Latest",
+        "groups": [
+          {
+            "group": "Get started",
+            "icon": "rocket",
+            "root": "latest/index",
+            "directory": "card",
+            "pages": [
+              "latest/install",
+              "latest/auth"
+            ]
+          },
+          {
+            "group": "Book House Help",
+            "icon": "calendar-search",
+            "root": "latest/househelp/index",
+            "directory": "accordion",
+            "pages": [
+              "latest/househelp/options",
+              "latest/househelp/find",
+              "latest/househelp/book",
+              "latest/househelp/watches"
+            ]
+          },
+          {
+            "group": "Manage",
+            "icon": "settings",
+            "root": "latest/manage",
+            "directory": "accordion",
+            "pages": [
+              "latest/addresses",
+              "latest/payments",
+              "latest/bookings"
+            ]
+          },
+          {
+            "group": "AI agents",
+            "icon": "bot",
+            "root": "latest/agents/index",
+            "directory": "accordion",
+            "pages": [
+              "latest/agents/codex",
+              "latest/agents/claude",
+              {
+                "group": "MCP",
+                "icon": "plug",
+                "root": "latest/agents/mcp",
+                "directory": "accordion",
+                "pages": [
+                  "latest/reference/mcp-tools"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Install",
+        "href": "https://tranquilo-ai.vercel.app"
+      }
+    ]
+  }
+}

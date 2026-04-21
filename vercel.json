@@ -1,0 +1,33 @@
+{
+  "installCommand": "bun install --frozen-lockfile",
+  "buildCommand": "bun turbo run build --filter=@tranquilo/landing",
+  "outputDirectory": ".next",
+  "redirects": [
+    {
+      "source": "/latest",
+      "destination": "/docs/latest"
+    },
+    {
+      "source": "/latest/:match*",
+      "destination": "/docs/latest/:match*"
+    },
+    {
+      "source": "/versions/:match*",
+      "destination": "/docs/versions/:match*"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/docs",
+      "destination": "https://personal-0b466684.mintlify.app/latest"
+    },
+    {
+      "source": "/docs/:match*",
+      "destination": "https://personal-0b466684.mintlify.app/:match*"
+    },
+    {
+      "source": "/mintlify-assets/:match*",
+      "destination": "https://personal-0b466684.mintlify.app/mintlify-assets/:match*"
+    }
+  ]
+}

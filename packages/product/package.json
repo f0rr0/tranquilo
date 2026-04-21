@@ -1,0 +1,29 @@
+{
+  "name": "@tranquilo/product",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./agent-catalog": "./src/agent-catalog.ts",
+    "./install-routes": "./src/install-routes.ts",
+    "./release-metadata": "./src/release-metadata.ts"
+  },
+  "scripts": {
+    "lint": "ultracite check .",
+    "typecheck": "tsgo --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "build": "tsgo --noEmit -p tsconfig.json",
+    "validate": "bun run lint && bun run typecheck && bun run test && bun run build"
+  },
+  "dependencies": {
+    "fflate": "catalog:cli",
+    "zod": "catalog:cli"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:tooling",
+    "@types/node": "catalog:tooling",
+    "@typescript/native-preview": "catalog:tooling",
+    "ultracite": "catalog:tooling",
+    "vitest": "catalog:tooling"
+  }
+}

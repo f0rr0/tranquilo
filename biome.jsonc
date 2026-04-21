@@ -1,0 +1,15 @@
+{
+  "extends": ["ultracite/biome/core"],
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!.turbo",
+      "!apps/*/.turbo",
+      "!apps/cli/assets/codex-skill/references/mcp-tools.json",
+      "!apps/cli/mcpb/manifest.json",
+      "!apps/landing/generated/release.json",
+      "!apps/docs/docs.json"
+    ]
+  }
+}

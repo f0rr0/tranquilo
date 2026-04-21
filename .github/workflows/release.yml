@@ -1,0 +1,85 @@
+name: release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Require main branch
+        run: |
+          if [ "${GITHUB_REF_NAME}" != "main" ]; then
+            echo "Manual CLI releases must be run from main. Selected ref: ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+      - run: bun install --frozen-lockfile
+      - name: Apply changesets
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bun run version
+          version="$(node -p "require('./apps/cli/package.json').version")"
+          tag="v$version"
+          if git diff --quiet; then
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "should_release=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Release $tag does not exist; publishing current version."
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          bun install --lockfile-only
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - if: steps.version.outputs.should_release != 'true'
+        run: echo "No pending CLI changesets. No release was created."
+      - if: steps.version.outputs.should_release == 'true'
+        name: Generate release docs and metadata
+        run: |
+          released_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "TRANQUILO_RELEASED_AT=$released_at" >> "$GITHUB_ENV"
+          export TRANQUILO_RELEASED_AT="$released_at"
+          bun run generate
+          bun scripts/snapshot-docs-version.ts --force
+          bun run generate
+          bun install --lockfile-only
+      - if: steps.version.outputs.should_release == 'true'
+        run: bun run validate
+      - if: steps.version.outputs.should_release == 'true'
+        run: bun run release:package
+      - if: steps.version.outputs.should_release == 'true'
+        name: Commit version and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/cli/package.json apps/cli/assets apps/cli/mcpb bun.lock CHANGELOG.md .changeset apps/docs
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): v${{ steps.version.outputs.version }}"
+          fi
+          git tag -f "v${{ steps.version.outputs.version }}"
+          git push origin HEAD:main
+          git push --force-with-lease origin "refs/tags/v${{ steps.version.outputs.version }}"
+      - if: steps.version.outputs.should_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun --filter=tranquilo run release:github -- --version=${{ steps.version.outputs.version }}

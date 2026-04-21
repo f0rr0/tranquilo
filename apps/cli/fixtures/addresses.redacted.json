@@ -1,0 +1,90 @@
+{
+  "addresses": {
+    "data": {
+      "success": true,
+      "message": "Address fetched successfully",
+      "data": [
+        {
+          "id": "989392",
+          "addressLine1": "Sector 49",
+          "addressLine2": null,
+          "city": "Gurugram",
+          "houseNo": "A-101",
+          "state": "Haryana",
+          "pincode": "122018",
+          "landmark": "Near market",
+          "buildingName": "Example Heights",
+          "type": "OTHER",
+          "name": "Gym",
+          "bhk": 1,
+          "floor": null,
+          "bathroom": 1,
+          "balcony": 1,
+          "otherName": "User",
+          "otherPhone": "9999999999",
+          "latitude": 28.42678260488412,
+          "longitude": 77.05101320520043,
+          "createdAt": null,
+          "updatedAt": null,
+          "canDelete": false,
+          "default": false
+        },
+        {
+          "id": "988639",
+          "addressLine1": "Sector 49",
+          "addressLine2": null,
+          "city": "Gurugram",
+          "houseNo": "B-202",
+          "state": "Haryana",
+          "pincode": "122018",
+          "landmark": "Near park",
+          "buildingName": "Sample Residency",
+          "type": "HOME",
+          "name": "Home",
+          "bhk": 2,
+          "floor": null,
+          "bathroom": 2,
+          "balcony": 1,
+          "otherName": "User",
+          "otherPhone": "",
+          "latitude": 28.427513389557177,
+          "longitude": 77.0506750792265,
+          "createdAt": null,
+          "updatedAt": null,
+          "canDelete": false,
+          "default": true
+        }
+      ],
+      "nearestAddress": null
+    },
+    "status": "OK"
+  },
+  "cart": {
+    "data": {
+      "success": true,
+      "message": "Cart fetched successfully",
+      "cart": {
+        "id": "1241701",
+        "deliveryAddress": {
+          "id": "988639"
+        },
+        "bookingType": "SCHEDULED",
+        "amountPayable": 158,
+        "items": [
+          {
+            "id": "cart-item-1",
+            "listingItemId": 44,
+            "quantity": 2,
+            "unitPrice": 79,
+            "amountPayable": 158,
+            "catalog": {
+              "id": "27",
+              "name": "Hourly Services"
+            }
+          }
+        ]
+      }
+    },
+    "status": "OK"
+  }
+}

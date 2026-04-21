@@ -1,0 +1,34 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      run: bun run lint
+    typecheck:
+      run: bun run typecheck
+    test:
+      run: bun run test
+    actionlint:
+      glob: ".github/workflows/*.{yml,yaml}"
+      run: bun run actions:lint
+    knip:
+      run: bun run knip:check
+
+pre-push:
+  parallel: true
+  commands:
+    generate:
+      run: bun run generate:check
+    validate:
+      run: bun run validate
+    changeset:
+      run: bun run changeset:check
+    release-verify:
+      run: bun run release:verify
+    actionlint:
+      glob: ".github/workflows/*.{yml,yaml}"
+      run: bun run actions:lint
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bun run commitlint:edit -- {1}

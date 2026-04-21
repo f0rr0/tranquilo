@@ -1,0 +1,121 @@
+{
+  "name": "tranquilo",
+  "version": "0.1.0",
+  "description": "First-party Tranquilo CLI and local MCP server",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "tranquilo": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "assets",
+    "mcpb",
+    "scripts"
+  ],
+  "scripts": {
+    "dev": "bun src/index.ts",
+    "lint": "ultracite check .",
+    "typecheck": "tsgo --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "build": "bun --bun tsdown",
+    "validate": "bun run lint && bun run typecheck && bun run test && bun run agent-assets:generate && bun run build",
+    "agent-assets:generate": "bun scripts/generate-agent-assets.ts",
+    "agent-assets:check": "bun scripts/generate-agent-assets.ts --check",
+    "release:package": "bun scripts/package-release.ts --mode=release",
+    "release:package:pr": "bun scripts/package-release.ts --mode=pr",
+    "release:smoke": "bun scripts/package-release.ts --mode=current --smoke",
+    "release:github": "bun scripts/release-github.ts",
+    "release:verify": "bun scripts/package-release.ts --mode=pr --smoke",
+    "prepack": "bun run build"
+  },
+  "dependencies": {
+    "@cfworker/json-schema": "catalog:cli",
+    "@inquirer/prompts": "catalog:cli",
+    "@js-temporal/polyfill": "catalog:cli",
+    "@modelcontextprotocol/server": "catalog:cli",
+    "@napi-rs/keyring": "catalog:cli",
+    "@tranquilo/product": "workspace:*",
+    "@visulima/tabular": "catalog:cli",
+    "citty": "catalog:cli",
+    "clipboardy": "catalog:cli",
+    "execa": "catalog:cli",
+    "open": "catalog:cli",
+    "qrcode": "catalog:cli",
+    "yoctocolors": "catalog:cli",
+    "zod": "catalog:cli"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:tooling",
+    "@types/node": "catalog:tooling",
+    "@types/qrcode": "catalog:tooling",
+    "@typescript/native-preview": "catalog:tooling",
+    "fflate": "catalog:cli",
+    "tsdown": "catalog:tooling",
+    "ultracite": "catalog:tooling",
+    "vitest": "catalog:tooling"
+  },
+  "tranquilo": {
+    "release": {
+      "prTargets": [
+        {
+          "os": "darwin",
+          "arch": "arm64",
+          "bunTarget": "bun-darwin-arm64"
+        },
+        {
+          "os": "darwin",
+          "arch": "x64",
+          "bunTarget": "bun-darwin-x64"
+        }
+      ],
+      "targets": [
+        {
+          "os": "darwin",
+          "arch": "arm64",
+          "bunTarget": "bun-darwin-arm64"
+        },
+        {
+          "os": "darwin",
+          "arch": "x64",
+          "bunTarget": "bun-darwin-x64"
+        },
+        {
+          "os": "linux",
+          "arch": "arm64",
+          "bunTarget": "bun-linux-arm64"
+        },
+        {
+          "os": "linux",
+          "arch": "x64",
+          "bunTarget": "bun-linux-x64"
+        },
+        {
+          "os": "win32",
+          "arch": "arm64",
+          "bunTarget": "bun-windows-arm64"
+        },
+        {
+          "os": "win32",
+          "arch": "x64",
+          "bunTarget": "bun-windows-x64"
+        }
+      ]
+    },
+    "mcpb": {
+      "dxtVersion": "0.1",
+      "compatibilityPlatforms": [
+        "darwin",
+        "linux",
+        "win32"
+      ]
+    }
+  },
+  "keywords": [
+    "cli",
+    "mcp",
+    "tranquilo"
+  ],
+  "author": "",
+  "license": "UNLICENSED"
+}

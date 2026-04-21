@@ -1,0 +1,106 @@
+{
+  "name": "tranquilo-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.3.13",
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "catalogs": {
+      "cli": {
+        "@cfworker/json-schema": "^4.1.1",
+        "@inquirer/prompts": "^8.4.2",
+        "@js-temporal/polyfill": "^0.5.1",
+        "@modelcontextprotocol/server": "2.0.0-alpha.2",
+        "@napi-rs/keyring": "^1.2.0",
+        "@visulima/tabular": "^3.1.3",
+        "citty": "^0.2.2",
+        "clipboardy": "^5.3.1",
+        "execa": "^9.6.1",
+        "fflate": "^0.8.2",
+        "open": "^11.0.0",
+        "qrcode": "^1.5.4",
+        "yoctocolors": "^2.1.2",
+        "zod": "^4.3.6"
+      },
+      "docs": {
+        "mint": "^4.2.521"
+      },
+      "tooling": {
+        "@biomejs/biome": "2.4.12",
+        "@changesets/cli": "^2.31.0",
+        "@commitlint/cli": "^20.5.0",
+        "@commitlint/config-conventional": "^20.5.0",
+        "@types/node": "^25.6.0",
+        "@types/qrcode": "^1.5.6",
+        "@typescript/native-preview": "^7.0.0-dev.20260420.1",
+        "actionlint": "^2.0.6",
+        "knip": "^6.5.0",
+        "lefthook": "^2.1.6",
+        "sherif": "^1.11.1",
+        "tsdown": "^0.21.9",
+        "turbo": "^2.9.6",
+        "ultracite": "7.6.0",
+        "vitest": "^4.1.4"
+      },
+      "web": {
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "next": "^16.2.4",
+        "react": "^19.2.5",
+        "react-dom": "^19.2.5"
+      }
+    }
+  },
+  "overrides": {
+    "sharp": "0.34.5"
+  },
+  "scripts": {
+    "dev": "turbo run dev --filter=@tranquilo/landing --filter=@tranquilo/docs",
+    "dev:cli": "bun apps/cli/src/index.ts",
+    "dev:landing": "turbo run dev --filter=@tranquilo/landing",
+    "dev:docs": "turbo run dev --filter=@tranquilo/docs",
+    "generate": "turbo run //#generate:assets",
+    "generate:assets": "bun scripts/generate-product-assets.ts",
+    "generate:check": "bun scripts/check-generated-docs.ts",
+    "lint": "turbo run lint //#lint:root",
+    "lint:root": "ultracite check .",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "build": "turbo run build",
+    "validate": "turbo run lint typecheck test build //#sherif //#knip:check //#actions:lint",
+    "check": "bun run validate",
+    "fix": "ultracite fix && bun run generate",
+    "sherif": "sherif",
+    "actions:lint": "bun scripts/actionlint.ts",
+    "knip": "knip --cache --reporter compact",
+    "knip:check": "bun run knip",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "commitlint": "commitlint",
+    "commitlint:edit": "commitlint --edit",
+    "changeset:check": "bun scripts/check-changeset.ts",
+    "release:package": "turbo run release:package --filter=tranquilo",
+    "release:package:pr": "turbo run release:package:pr --filter=tranquilo",
+    "release:smoke": "turbo run release:smoke --filter=tranquilo",
+    "release:github": "bun --filter=tranquilo run release:github",
+    "release:verify": "turbo run release:verify --filter=tranquilo",
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:tooling",
+    "@changesets/cli": "catalog:tooling",
+    "@commitlint/cli": "catalog:tooling",
+    "@commitlint/config-conventional": "catalog:tooling",
+    "@types/node": "catalog:tooling",
+    "actionlint": "catalog:tooling",
+    "execa": "catalog:cli",
+    "knip": "catalog:tooling",
+    "lefthook": "catalog:tooling",
+    "sherif": "catalog:tooling",
+    "turbo": "catalog:tooling",
+    "ultracite": "catalog:tooling"
+  }
+}

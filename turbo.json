@@ -1,0 +1,125 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "//#generate:assets": {
+      "description": "Generate committed Mintlify docs plus ignored landing metadata, skill, Claude command, and MCPB artifacts.",
+      "inputs": [
+        "package.json",
+        "scripts/generate-product-assets.ts",
+        "apps/cli/package.json",
+        "apps/cli/src/cli.ts",
+        "apps/cli/scripts/generate-agent-assets.ts",
+        "packages/product/src/**",
+        "apps/docs/versions/**"
+      ],
+      "outputs": [
+        "apps/landing/generated/**",
+        "apps/docs/docs.json",
+        "apps/docs/latest/**",
+        "apps/docs/llms.txt",
+        "apps/docs/skill.md",
+        "apps/cli/assets/codex-skill/**",
+        "apps/cli/assets/claude-commands/tranquilo/**",
+        "apps/cli/mcpb/manifest.json"
+      ],
+      "env": [
+        "PUBLIC_INSTALL_BASE_URL",
+        "GITHUB_OWNER",
+        "GITHUB_REPO",
+        "GITHUB_REPOSITORY",
+        "VERCEL_GIT_REPO_OWNER",
+        "VERCEL_GIT_REPO_SLUG",
+        "VERCEL_PROJECT_PRODUCTION_URL",
+        "VERCEL_URL",
+        "TRANQUILO_RELEASED_AT"
+      ]
+    },
+    "dev": {
+      "dependsOn": ["//#generate:assets"],
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": ["//#generate:assets"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!assets/codex-skill/**",
+        "!assets/claude-commands/tranquilo/**",
+        "!mcpb/manifest.json",
+        "!generated/**"
+      ],
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["//#generate:assets", "transit"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!assets/codex-skill/**",
+        "!assets/claude-commands/tranquilo/**",
+        "!mcpb/manifest.json",
+        "!generated/**"
+      ],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["//#generate:assets", "transit"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!assets/codex-skill/**",
+        "!assets/claude-commands/tranquilo/**",
+        "!mcpb/manifest.json",
+        "!generated/**"
+      ]
+    },
+    "build": {
+      "dependsOn": ["//#generate:assets", "^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!assets/codex-skill/**",
+        "!assets/claude-commands/tranquilo/**",
+        "!mcpb/manifest.json",
+        "!generated/**"
+      ],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+    },
+    "validate": {
+      "dependsOn": ["lint", "typecheck", "test", "build"],
+      "outputs": []
+    },
+    "release:package": {
+      "dependsOn": ["//#generate:assets"],
+      "outputs": ["dist-release/**"]
+    },
+    "release:package:pr": {
+      "dependsOn": ["//#generate:assets"],
+      "outputs": ["dist-release/**"]
+    },
+    "release:smoke": {
+      "dependsOn": ["//#generate:assets"],
+      "outputs": ["dist-release/**"]
+    },
+    "release:verify": {
+      "dependsOn": ["//#generate:assets"],
+      "outputs": ["dist-release/**"]
+    },
+    "//#lint:root": {
+      "outputs": []
+    },
+    "//#sherif": {
+      "outputs": []
+    },
+    "//#actions:lint": {
+      "outputs": []
+    },
+    "//#knip:check": {
+      "outputs": []
+    },
+    "//#changeset:check": {
+      "cache": false
+    }
+  }
+}

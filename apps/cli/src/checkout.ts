@@ -7,10 +7,12 @@ import QRCode from "qrcode";
 import { parseCartItems } from "./api";
 import { createClient, formatSlotTime, resolveLocation } from "./context";
 import { stateDir } from "./paths";
+import { rememberedUpiApp } from "./payment-preferences";
 import { assertScheduledServiceable } from "./serviceability";
 import { nowPlainDateTime, systemTimezone, todayPlainDate } from "./time";
 import type { JsonObject } from "./types";
 import { TranquiloError } from "./types";
+import { parseUpiApp, type UpiApp } from "./upi-apps";
 
 const STORE_FILE = "checkout-orders.json";
 const STORE_VERSION = 1;
@@ -98,11 +100,13 @@ interface PaymentUriResult {
   paymentUri: string;
   replacedOrderId?: string | undefined;
   source: PaymentUriSource;
+  upiApp?: UpiApp | undefined;
 }
 
 interface PaymentTarget {
   paymentUri: string;
   source: PaymentUriSource;
+  upiApp?: UpiApp | undefined;
 }
 
 interface CheckoutStatusResult {
@@ -142,6 +146,13 @@ function numberValue(value: unknown): number | undefined {
 
 function dataOf(payload: JsonObject): JsonObject {
   return asObject(payload.data) ?? payload;
+}
+
+function withOptionalUpiApp<T extends object>(
+  value: T,
+  upiApp?: UpiApp
+): T & { upiApp?: UpiApp | undefined } {
+  return upiApp ? { ...value, upiApp } : value;
 }
 
 function checkoutStorePath(): string {
@@ -543,19 +554,6 @@ function supportsPaymentMethod(
   );
 }
 
-function preferredUpiApp(payload: JsonObject): string | undefined {
-  const data = savedMethodsData(payload);
-  const lastUsed = asObject(data.lastUsedPaymentMethod);
-  const lastUsedPackage = stringValue(lastUsed?.packageName);
-  if (lastUsedPackage) {
-    return lastUsedPackage;
-  }
-  const app = asArray(data.appsUsed)
-    .map((item) => asObject(item))
-    .find(Boolean);
-  return stringValue(app?.packageName);
-}
-
 function extractUpiUri(value: unknown): string | undefined {
   if (typeof value === "string") {
     return value.startsWith("upi://pay?") ? value : undefined;
@@ -753,18 +751,21 @@ async function updateOrderPaymentTarget(
     target.paymentUri,
     target.source
   );
-  return {
-    order: publicCheckoutOrder(updated),
-    paymentUri: target.paymentUri,
-    source: target.source,
-  };
+  return withOptionalUpiApp(
+    {
+      order: publicCheckoutOrder(updated),
+      paymentUri: target.paymentUri,
+      source: target.source,
+    },
+    target.upiApp
+  );
 }
 
 async function requestPaymentTarget(
   client: Awaited<ReturnType<typeof createClient>>,
   order: CheckoutOrder,
   paymentMethod: UpiPaymentMethod,
-  upiApp?: string
+  upiApp?: UpiApp
 ): Promise<PaymentUriResult | undefined> {
   try {
     const transaction = await client.juspayTransaction({
@@ -772,10 +773,12 @@ async function requestPaymentTarget(
       merchantId: order.merchantId,
       orderId: order.orderId,
       paymentMethod,
-      upiApp,
+      upiApp: upiApp?.packageName,
     });
     const target = paymentTargetFromTransaction(transaction, paymentMethod);
-    return target ? updateOrderPaymentTarget(order, target) : undefined;
+    return target
+      ? updateOrderPaymentTarget(order, withOptionalUpiApp(target, upiApp))
+      : undefined;
   } catch (error) {
     if (isPaymentRetryNotAllowed(error)) {
       const recovered = await recoverExistingPaymentPage(client, order);
@@ -794,7 +797,10 @@ async function requestPaymentTarget(
 }
 
 export async function recreateCheckoutPaymentUri(
-  orderId: string
+  orderId: string,
+  options: {
+    upiApp?: string | undefined;
+  } = {}
 ): Promise<PaymentUriResult> {
   const original = await getCheckoutOrder(orderId);
   assertBookableSlot(original.slot);
@@ -823,12 +829,18 @@ export async function recreateCheckoutPaymentUri(
     item,
     slot: original.slot,
   });
-  const payment = await resolveCheckoutPaymentUri(fresh.orderId);
+  const payment = await resolveCheckoutPaymentUri(fresh.orderId, {
+    upiApp: options.upiApp,
+  });
   return { ...payment, replacedOrderId: original.orderId };
 }
 
 export async function resolveCheckoutPaymentUri(
-  orderId: string
+  orderId: string,
+  options: {
+    requireUpiApp?: boolean | undefined;
+    upiApp?: string | undefined;
+  } = {}
 ): Promise<PaymentUriResult> {
   const order = await getCheckoutOrder(orderId);
   assertBookableSlot(order.slot);
@@ -847,23 +859,37 @@ export async function resolveCheckoutPaymentUri(
     merchantId: order.merchantId,
     orderId: order.orderId,
   });
+  const selectedUpiApp = options.upiApp
+    ? parseUpiApp(options.upiApp)
+    : await rememberedUpiApp();
 
   if (supportsPaymentMethod(savedMethods, "UPI_PAY")) {
-    const upiPayment = await requestPaymentTarget(
-      client,
-      order,
-      "UPI_PAY",
-      preferredUpiApp(savedMethods)
-    );
-    if (upiPayment) {
-      return upiPayment;
-    }
-    throw new TranquiloError(
-      "Juspay did not return a UPI URI or payment page URL.",
-      {
-        code: "PAYMENT_URI_MISSING",
+    if (selectedUpiApp) {
+      const upiPayment = await requestPaymentTarget(
+        client,
+        order,
+        "UPI_PAY",
+        selectedUpiApp
+      );
+      if (upiPayment) {
+        return upiPayment;
       }
-    );
+      throw new TranquiloError(
+        "Juspay did not return a UPI URI or payment page URL.",
+        {
+          code: "PAYMENT_URI_MISSING",
+        }
+      );
+    }
+    if (options.requireUpiApp !== false) {
+      throw new TranquiloError(
+        "Choose a UPI app before starting payment. Pass --upi-app phonepe, --upi-app googlepay, or --upi-app paytm.",
+        {
+          code: "UPI_APP_REQUIRED",
+          details: { allowed: ["phonepe", "googlepay", "paytm"] },
+        }
+      );
+    }
   }
 
   if (!supportsPaymentMethod(savedMethods, "UPI_QR")) {

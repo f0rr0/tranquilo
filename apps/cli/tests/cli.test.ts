@@ -929,6 +929,7 @@ describe("CLI integration against a mocked API", () => {
         intervalMs: 1,
         slot: "20 Apr 2026 6pm",
         timeoutMs: 5000,
+        upiApp: "phonepe",
         window: "after-work",
         yes: true,
       });
@@ -966,6 +967,7 @@ describe("CLI integration against a mocked API", () => {
       pay: true,
       slot: "20 Apr 2026 6pm",
       timeoutMs: 5000,
+      upiApp: "phonepe",
       window: "after-work",
     });
 
@@ -1103,6 +1105,7 @@ describe("CLI integration against a mocked API", () => {
         intervalMs: 1,
         json: true,
         timeoutMs: 5000,
+        upiApp: "phonepe",
       })
     );
 
@@ -1126,10 +1129,10 @@ describe("CLI integration against a mocked API", () => {
     expect(txnCalls).toHaveLength(1);
     const txnBody = new URLSearchParams(txnCalls[0]?.body ?? "");
     expect(txnBody.get("payment_method")).toBe("UPI_PAY");
-    expect(txnBody.has("upi_app")).toBe(false);
+    expect(txnBody.get("upi_app")).toBe("phonepe://pay");
   });
 
-  it("uses the Juspay last-used UPI app when one is returned", async () => {
+  it("requires and remembers the selected UPI app", async () => {
     await fsp.writeFile(
       path.join(tempDir, "checkout-orders.json"),
       `${JSON.stringify(
@@ -1160,8 +1163,16 @@ describe("CLI integration against a mocked API", () => {
       )}\n`
     );
 
+    await expect(
+      checkoutPayAction("gpay-order", { json: true, watch: false })
+    ).rejects.toMatchObject({ code: "UPI_APP_REQUIRED" });
+
     const paid = JSON.parse(
-      await checkoutPayAction("gpay-order", { json: true, watch: false })
+      await checkoutPayAction("gpay-order", {
+        json: true,
+        upiApp: "googlepay",
+        watch: false,
+      })
     );
 
     expect(paid).toMatchObject({
@@ -1176,7 +1187,15 @@ describe("CLI integration against a mocked API", () => {
     );
     const txnBody = new URLSearchParams(txnCall?.body ?? "");
     expect(txnBody.get("payment_method")).toBe("UPI_PAY");
-    expect(txnBody.get("upi_app")).toBe("gpay://upi/pay");
+    expect(txnBody.get("upi_app")).toBe("tez://upi/pay");
+    expect(
+      JSON.parse(
+        await fsp.readFile(
+          path.join(tempDir, "payment-preferences.json"),
+          "utf8"
+        )
+      )
+    ).toMatchObject({ upiApp: "googlepay" });
   });
 
   it("refuses to create checkout beyond the real booking horizon", async () => {
@@ -1249,7 +1268,11 @@ describe("CLI integration against a mocked API", () => {
     calls = [];
 
     await expect(
-      checkoutPayAction("stale-order", { json: true, timeoutMs: 1 })
+      checkoutPayAction("stale-order", {
+        json: true,
+        timeoutMs: 1,
+        upiApp: "phonepe",
+      })
     ).rejects.toMatchObject({ code: "BOOKING_DATE_OUT_OF_RANGE" });
     expect(calls).toHaveLength(0);
   });
@@ -1291,6 +1314,7 @@ describe("CLI integration against a mocked API", () => {
         intervalMs: 1,
         json: true,
         timeoutMs: 100,
+        upiApp: "phonepe",
       })
     );
 
@@ -1344,7 +1368,11 @@ describe("CLI integration against a mocked API", () => {
     );
 
     const paid = JSON.parse(
-      await checkoutPayAction("page-order", { json: true, watch: false })
+      await checkoutPayAction("page-order", {
+        json: true,
+        upiApp: "phonepe",
+        watch: false,
+      })
     );
 
     expect(paid).toMatchObject({
@@ -1364,7 +1392,7 @@ describe("CLI integration against a mocked API", () => {
         return (
           body.get("order_id") === "page-order" &&
           body.get("payment_method") === "UPI_PAY" &&
-          !body.has("upi_app")
+          body.get("upi_app") === "phonepe://pay"
         );
       })
     ).toBe(true);
@@ -1404,6 +1432,7 @@ describe("CLI integration against a mocked API", () => {
     const paid = JSON.parse(
       await checkoutPayAction("status-page-order", {
         json: true,
+        upiApp: "phonepe",
         watch: false,
       })
     );
@@ -1437,6 +1466,7 @@ describe("CLI integration against a mocked API", () => {
     paymentStatusCalls = 0;
 
     const output = await checkoutPayAction(created.order.orderId, {
+      upiApp: "phonepe",
       watch: false,
     });
 

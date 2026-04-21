@@ -52,6 +52,7 @@ Use the installed \`tranquilo\` MCP server first for auth, address, options, and
 - For any Tranquilo request, call \`auth_status\` first. If credentials are missing, stop and tell the user exactly: \`Run tranquilo login in a local terminal, then retry.\` Do not continue to address/slot tools until authenticated.
 - Never ask users to paste OTPs, access tokens, refresh tokens, UPI details, or payment data into chat.
 - Treat user phrases like "book it", "book this", "yes book", or "book the 60 min one" as approval to create checkout and show the local QR payment flow for the selected slot. Do not ask a second "pay now?" question in local terminal agents.
+- Before running a local QR payment flow, ask which UPI app to use if the user has not already said and no local preference exists. Allowed values are \`phonepe\`, \`googlepay\`, and \`paytm\`. Pass that value as \`--upi-app\`; the CLI remembers it for later payments.
 - Treat "book any you find" or "book the first one" as approval to book the earliest matching slot only if it is available in the current interactive session. If no slot is available now and a background watch is needed, create a notify-only watch. When a notification arrives later, inspect the watch and book it locally after the user confirms.
 - Treat follow-up corrections as authoritative. If the user says "check any day for 30 mins" after a 60-minute search, discard the old duration/date filters and run a fresh 30-minute search.
 - Only run QR/payment polling commands in a local terminal agent after the user has selected or confirmed the exact slot/duration/address.
@@ -78,9 +79,9 @@ Prefer exact \`startTime\` values returned by \`househelp_find_slots\` when prep
 
 For full local booking after the user says "book it" or otherwise approves the selected slot, run the CLI in the local terminal so it prints QR immediately, waits for scan, polls payment, and finalizes. Do not return a payment command and wait for a second "pay now" message:
 
-${codeBlock([`${localPaymentCommand ?? "tranquilo househelp book --pay --yes"} --duration 60 --rank 1 --preset next-4-days --window after-work --address-id <id> --save-qr /tmp/tranquilo-payment.png`])}
+${codeBlock([`${localPaymentCommand ?? "tranquilo househelp book --pay --yes --upi-app <phonepe|googlepay|paytm>"} --duration 60 --rank 1 --preset next-4-days --window after-work --address-id <id> --save-qr /tmp/tranquilo-payment.png`])}
 
-Do not use \`tranquilo checkout pay <orderId>\` as the normal local booking path after preparing checkout through MCP; Juspay may refuse to reopen old prepared orders. Use a fresh \`tranquilo househelp book ... --pay --yes\` command for local QR payment. The CLI prints a standard terminal QR and saves a PNG fallback; in Codex desktop, show the saved PNG path as a Markdown image if the terminal QR is hard to scan. Hosted/web chat agents should not run QR or polling flows; relay the returned payment command to the user instead. Never open a UPI app from the agent.
+Do not use \`tranquilo checkout pay <orderId>\` as the normal local booking path after preparing checkout through MCP; Juspay may refuse to reopen old prepared orders. Use a fresh \`tranquilo househelp book ... --pay --yes --upi-app <app>\` command for local QR payment. The CLI prints a standard terminal QR and saves a PNG fallback; in Codex desktop, show the saved PNG path as a Markdown image if the terminal QR is hard to scan. Hosted/web chat agents should not run QR or polling flows; relay the returned payment command to the user instead. Never open a UPI app from the agent.
 
 ## Booking Flow
 
@@ -93,7 +94,7 @@ Do not use \`tranquilo checkout pay <orderId>\` as the normal local booking path
 7. For "scan", "keep looking", or "watch" requests, first do an immediate \`househelp_find_slots\` check. If a matching slot is available and the user said to book any/first match, book it locally with QR. If no slot is available, create \`househelp_watch_create\` as a notify-only watch. Watches must not prepare checkout automatically; when the watch later reports a found slot, inspect it and ask the user before running the local \`tranquilo househelp watch book <watchId> --pay\` flow.
 8. Do not offer dates outside the valid booking horizon: today, tomorrow, and the next two days. If the user asks beyond that, explain that Tranquilo does not allow booking that date yet.
 9. If an older checkout exists outside that horizon, or its amount/duration looks wrong, do not pay it. Restart slot search and create a fresh checkout inside the valid horizon.
-10. If this is a local terminal agent and the user says to book the selected slot, run \`tranquilo househelp book ... --pay --yes\` with explicit \`duration\`, \`slot\` or \`rank\`, and address context. Tell the user to scan the QR and wait for confirmation.
+10. If this is a local terminal agent and the user says to book the selected slot, run \`tranquilo househelp book ... --pay --yes --upi-app <app>\` with explicit \`duration\`, \`slot\` or \`rank\`, address context, and the user's selected or remembered UPI app. Tell the user to scan the QR and wait for confirmation.
 11. If this is a hosted/web chat session, or the user explicitly asks only to prepare payment, call \`househelp_prepare_booking\` and return the \`payCommand\`, amount, selected slot, duration, and address/source.
 12. If payment/confirmation fails and the user may need to inspect the mobile app, refer to the "Pronto app". Do not say "Tranquilo app".
 13. Do not print a cryptic command as the primary response in local terminal sessions when the user asked to book; run the QR flow instead.
@@ -101,8 +102,8 @@ Do not use \`tranquilo checkout pay <orderId>\` as the normal local booking path
 ## Example Intents
 
 - "Find a maid tomorrow" -> auth check, active address, options, \`househelp_find_slots\` with \`preset=tomorrow\` and \`window=smart\`.
-- "Book a cleaner after work this week for 1 hour" -> duration 60, \`preset=next-4-days\`, \`window=after-work\`, ask before checkout/payment.
-- "Scan for slots for 1 hour in upcoming days and book any you find after 6pm" -> duration 60, \`preset=next-4-days\`, \`timeWindow=["18:00-22:00"]\`, immediate search; if found now, fresh local \`househelp book --pay --yes\`; if not found now, create a notify-only watch and tell the user they can say \`book watch <id>\` when notified.
+- "Book a cleaner after work this week for 1 hour" -> duration 60, \`preset=next-4-days\`, \`window=after-work\`, ask before checkout/payment and ask for UPI app if no preference exists.
+- "Scan for slots for 1 hour in upcoming days and book any you find after 6pm" -> duration 60, \`preset=next-4-days\`, \`timeWindow=["18:00-22:00"]\`, immediate search; if found now, ask for UPI app if needed and run fresh local \`househelp book --pay --yes --upi-app <app>\`; if not found now, create a notify-only watch and tell the user they can say \`book watch <id>\` when notified.
 - "Need house help before 9am" -> use \`window=before-work\`.
 - "Watch for a weekend maid slot" -> use \`househelp_watch_create\` with \`preset=weekend\` only if the weekend is within today plus 3 days.
 `;
@@ -199,7 +200,7 @@ function generatedFiles(): GeneratedFile[] {
       content: claudeCommand(
         "Prepare Tranquilo payment handoff",
         "<orderId>",
-        'Use the Tranquilo MCP server to return a safe local payment handoff for hosted/web-style sessions; for existing House Help orders use `househelp_payment_handoff`. If this is a local terminal session and the user says "book it" for a selected House Help slot, run the local House Help book command with `--pay --yes` so it prints the QR immediately, waits for scan, polls payment, and finalizes the booking. Do not ask a separate "pay now?" question, do not expose Juspay tokens in chat, and never open a UPI app from the agent.'
+        'Use the Tranquilo MCP server to return a safe local payment handoff for hosted/web-style sessions; for existing House Help orders use `househelp_payment_handoff`. If this is a local terminal session and the user says "book it" for a selected House Help slot, ask which UPI app to use if no remembered preference exists (`phonepe`, `googlepay`, or `paytm`), then run the local House Help book command with `--pay --yes --upi-app <app>` so it prints the QR immediately, waits for scan, polls payment, and finalizes the booking. Do not ask a separate "pay now?" question, do not expose Juspay tokens in chat, and never open a UPI app from the agent.'
       ),
     },
     {

@@ -239,6 +239,13 @@ const checkoutCommand = defineCommand({
           default: "compact",
           valueHint: "size",
         },
+        "upi-app": {
+          type: "enum",
+          description:
+            "UPI app to route payment through; required until a local preference is saved",
+          options: ["phonepe", "googlepay", "paytm"],
+          valueHint: "app",
+        },
         watch: {
           type: "boolean",
           default: true,
@@ -246,12 +253,14 @@ const checkoutCommand = defineCommand({
           negativeDescription: "Only render payment instructions",
         },
         json: { type: "boolean", description: "Print JSON" },
+        ...noInteractiveArg,
       },
       run: ({ args }) =>
         writeResult(
           checkoutPayAction(String(args.orderId), {
             copyLink: args.copyLink as boolean | undefined,
             json: args.json as boolean | undefined,
+            noInteractive: noInteractiveValue(args),
             openIntent: args.openIntent as boolean | undefined,
             qrSize: textArg(args.qrSize) as
               | "compact"
@@ -259,6 +268,7 @@ const checkoutCommand = defineCommand({
               | "small"
               | undefined,
             saveQr: textArg(args.saveQr),
+            upiApp: textArg(args.upiApp),
             watch: args.watch as boolean | undefined,
           })
         ),
@@ -496,6 +506,13 @@ const househelpCommand = defineCommand({
           default: "compact",
           valueHint: "size",
         },
+        "upi-app": {
+          type: "enum",
+          description:
+            "UPI app to route payment through; required for --pay until a local preference is saved",
+          options: ["phonepe", "googlepay", "paytm"],
+          valueHint: "app",
+        },
         "interval-ms": {
           type: "string",
           description: "Payment poll interval for --pay",
@@ -529,6 +546,7 @@ const househelpCommand = defineCommand({
             saveQr: textArg(args.saveQr),
             slot: textArg(args.slot),
             timeoutMs: numberArg(args.timeoutMs),
+            upiApp: textArg(args.upiApp),
             yes: args.yes as boolean | undefined,
           })
         ),
@@ -628,6 +646,13 @@ const househelpCommand = defineCommand({
               default: "compact",
               valueHint: "size",
             },
+            "upi-app": {
+              type: "enum",
+              description:
+                "UPI app to route payment through; required for --pay until a local preference is saved",
+              options: ["phonepe", "googlepay", "paytm"],
+              valueHint: "app",
+            },
             "interval-ms": {
               type: "string",
               description: "Payment poll interval for --pay",
@@ -647,6 +672,7 @@ const househelpCommand = defineCommand({
                 copyLink: args.copyLink as boolean | undefined,
                 intervalMs: numberArg(args.intervalMs),
                 json: args.json as boolean | undefined,
+                noInteractive: noInteractiveValue(args),
                 pay: args.pay as boolean | undefined,
                 qrSize: textArg(args.qrSize) as
                   | "compact"
@@ -655,6 +681,7 @@ const househelpCommand = defineCommand({
                   | undefined,
                 saveQr: textArg(args.saveQr),
                 timeoutMs: numberArg(args.timeoutMs),
+                upiApp: textArg(args.upiApp),
               })
             ),
         }),

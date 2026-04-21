@@ -117,8 +117,8 @@ describe("MCP server", () => {
       "tranquilo checkout pay --open-intent"
     );
     expect(localAgentCliCommands.map((command) => command.command)).toEqual([
-      "tranquilo househelp book --pay --yes",
-      "tranquilo checkout pay",
+      "tranquilo househelp book --pay --yes --upi-app <phonepe|googlepay|paytm>",
+      "tranquilo checkout pay --upi-app <phonepe|googlepay|paytm>",
     ]);
     for (const command of localAgentCliCommands) {
       expect(command.requiresLocalTerminal).toBe(true);

@@ -1,4 +1,4 @@
-import { PACKAGE_METADATA } from "@tranquilo/product/release-metadata";
+import { PACKAGE_METADATA } from "@tranquilo/cli-model/release-metadata";
 import {
   type ArgsDef,
   type CommandDef,
@@ -390,8 +390,6 @@ function househelpFindOptions(args: Record<string, unknown>) {
     lng: numberArg(args.lng),
     preset: textArg(args.preset) as
       | "next-4-days"
-      | "next-7-days"
-      | "next-weekend"
       | "today"
       | "tomorrow"
       | "weekend"

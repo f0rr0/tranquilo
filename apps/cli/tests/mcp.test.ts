@@ -1,4 +1,4 @@
-import { AGENT_CATALOG } from "@tranquilo/product/agent-catalog";
+import { AGENT_CATALOG } from "@tranquilo/cli-model/agent-catalog";
 import { describe, expect, it } from "vitest";
 import { createMcpServer } from "../src/mcp";
 

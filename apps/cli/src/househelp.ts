@@ -29,8 +29,6 @@ export type HousehelpWindow =
 
 export type HousehelpDatePreset =
   | "next-4-days"
-  | "next-7-days"
-  | "next-weekend"
   | "today"
   | "tomorrow"
   | "weekend";
@@ -393,10 +391,8 @@ function resolveDateRange(input: HousehelpFindInput): {
     const tomorrow = current.add({ days: 1 });
     return { from: tomorrow, to: tomorrow };
   }
-  if (preset === "weekend" || preset === "next-weekend") {
-    const start = nextSaturday(current).add({
-      days: preset === "next-weekend" ? 7 : 0,
-    });
+  if (preset === "weekend") {
+    const start = nextSaturday(current);
     return { from: start, to: start.add({ days: 1 }) };
   }
   return { from: current, to: bookableEnd(current) };

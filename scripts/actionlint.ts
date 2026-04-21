@@ -24,11 +24,11 @@ async function workflowFiles(dir = WORKFLOWS_DIR): Promise<string[]> {
 }
 
 if (import.meta.main) {
-  const linter = await createLinter();
   const files = await workflowFiles();
   let errors = 0;
 
   for (const file of files) {
+    const linter = await createLinter();
     const source = await fs.readFile(file, "utf8");
     const results = linter(source, file);
     for (const result of results) {

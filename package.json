@@ -25,7 +25,14 @@
         "zod": "^4.3.6"
       },
       "docs": {
-        "mint": "^4.2.521"
+        "@tailwindcss/postcss": "^4.2.4",
+        "@types/mdx": "^2.0.13",
+        "fumadocs-core": "^16.8.1",
+        "fumadocs-mdx": "^14.3.1",
+        "fumadocs-ui": "^16.8.1",
+        "lucide-react": "^1.8.0",
+        "postcss": "^8.5.10",
+        "tailwindcss": "^4.2.4"
       },
       "tooling": {
         "@biomejs/biome": "2.4.12",
@@ -57,10 +64,10 @@
     "sharp": "0.34.5"
   },
   "scripts": {
-    "dev": "turbo run dev --filter=@tranquilo/landing --filter=@tranquilo/docs",
+    "dev": "turbo run dev --filter=@tranquilo/site",
     "dev:cli": "bun apps/cli/src/index.ts",
-    "dev:landing": "turbo run dev --filter=@tranquilo/landing",
-    "dev:docs": "turbo run dev --filter=@tranquilo/docs",
+    "dev:site": "turbo run dev --filter=@tranquilo/site",
+    "dev:docs": "turbo run dev --filter=@tranquilo/site",
     "generate": "turbo run //#generate:assets",
     "generate:assets": "bun scripts/generate-product-assets.ts",
     "generate:check": "bun scripts/check-generated-docs.ts",
@@ -98,6 +105,7 @@
     "execa": "catalog:cli",
     "knip": "catalog:tooling",
     "lefthook": "catalog:tooling",
+    "next": "catalog:web",
     "sherif": "catalog:tooling",
     "turbo": "catalog:tooling",
     "ultracite": "catalog:tooling"

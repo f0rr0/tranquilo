@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { RELEASE_METADATA } from "@tranquilo/product/release-metadata";
+import { RELEASE_METADATA } from "@tranquilo/cli-model/release-metadata";
 import { execa } from "execa";
 
 export type PackageMode = "current" | "pr" | "release";

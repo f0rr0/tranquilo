@@ -6,11 +6,11 @@ import { mainCommand } from "../apps/cli/src/cli";
 import {
   AGENT_CATALOG,
   MCP_TOOLS,
-} from "../packages/product/src/agent-catalog";
+} from "../packages/cli-model/src/agent-catalog";
 import {
   PACKAGE_METADATA,
   RELEASE_METADATA,
-} from "../packages/product/src/release-metadata";
+} from "../packages/cli-model/src/release-metadata";
 
 interface GeneratedFile {
   content: string;
@@ -27,17 +27,6 @@ interface ReleaseJson {
   releaseNotesUrl: string;
   supportedPlatforms: Array<{ arch: string; os: string }>;
   version: string;
-}
-
-type NavItem = string | NavGroup;
-
-interface NavGroup {
-  directory?: "accordion" | "card" | "none";
-  expanded?: boolean;
-  group: string;
-  icon?: string;
-  pages: NavItem[];
-  root?: string;
 }
 
 const root = path.resolve(new URL("..", import.meta.url).pathname);
@@ -57,7 +46,7 @@ function deploymentBaseUrl(): string {
     process.env.PUBLIC_INSTALL_BASE_URL ??
     process.env.VERCEL_PROJECT_PRODUCTION_URL ??
     process.env.VERCEL_URL ??
-    "https://tranquilo-ai.vercel.app";
+    PACKAGE_METADATA.publicBaseUrl;
   return trimTrailingSlash(urlWithProtocol(value));
 }
 
@@ -87,15 +76,15 @@ const DOC_PAGE_PATHS = [
   "househelp/find",
   "househelp/book",
   "househelp/watches",
-  "manage",
-  "addresses",
-  "payments",
-  "bookings",
+  "manage/index",
+  "manage/addresses",
+  "manage/payments",
+  "manage/bookings",
   "agents/index",
   "agents/codex",
   "agents/claude",
-  "agents/mcp",
-  "reference/mcp-tools",
+  "agents/mcp/index",
+  "agents/mcp/tools",
 ] as const;
 
 async function command(command: string, args: string[]): Promise<void> {
@@ -137,8 +126,13 @@ function compareVersionTags(left: string, right: string): number {
 
 function existingReleasedAtForVersion(version: string): string | null {
   const candidates = [
-    path.join(root, "apps/docs/versions", tag(version), "index.mdx"),
-    path.join(root, "apps/docs/latest/index.mdx"),
+    path.join(
+      root,
+      "packages/docs-content/versions",
+      tag(version),
+      "index.mdx"
+    ),
+    path.join(root, "packages/docs-content/latest/index.mdx"),
   ];
   for (const candidate of candidates) {
     try {
@@ -212,6 +206,22 @@ function frontmatter({
     lines.push(`sidebarTitle: ${yaml(sidebarTitle)}`);
   }
   return `${lines.join("\n")}\n---\n\n`;
+}
+
+function metaJson(value: Record<string, boolean | string | string[]>): string {
+  const entries = Object.entries(value);
+  const lines = entries.map(([key, entry], index) => {
+    const suffix = index === entries.length - 1 ? "" : ",";
+    const serialized = Array.isArray(entry)
+      ? `[${entry.map((item) => JSON.stringify(item)).join(", ")}]`
+      : JSON.stringify(entry);
+    return `  ${JSON.stringify(key)}: ${serialized}${suffix}`;
+  });
+  return `{\n${lines.join("\n")}\n}\n`;
+}
+
+function docsHref(pathName: string): string {
+  return `/docs/latest/${pathName}`;
 }
 
 function sh(commandText: string): string {
@@ -431,20 +441,20 @@ Released: ${released}
 
 ${sh(metadata.installCommand)}
 
-<Columns cols={2}>
-  <Card title="Install" icon="download" href="/latest/install">
+<Cards>
+  <Card title="Install" icon="download" href="${docsHref("install")}">
     Install the CLI and configure local AI integrations.
   </Card>
-  <Card title="Book House Help" icon="calendar-check" href="/latest/househelp">
+  <Card title="Book House Help" icon="calendar-check" href="${docsHref("househelp")}">
     Find slots by duration, dates, and working-hour preferences.
   </Card>
-  <Card title="Use with agents" icon="bot" href="/latest/agents">
+  <Card title="Use with agents" icon="bot" href="${docsHref("agents")}">
     Learn the safe MCP and CLI surfaces for Codex and Claude.
   </Card>
-  <Card title="MCP tools" icon="plug" href="/latest/reference/mcp-tools">
+  <Card title="MCP tools" icon="plug" href="${docsHref("agents/mcp/tools")}">
     See the structured tools agents should call.
   </Card>
-</Columns>
+</Cards>
 `;
 }
 
@@ -547,14 +557,14 @@ function househelpFindPage(): string {
 
 Slot search is read-only. It does not mutate the cart and does not create checkout.
 
-<Tabs>
-  <Tab title="After work">
+<Tabs items={["After work", "Exact time", "Fallback durations"]}>
+  <Tab value="After work">
 ${sh("tranquilo househelp find --duration 60 --preset next-4-days --window after-work")}
   </Tab>
-  <Tab title="Exact time">
+  <Tab value="Exact time">
 ${sh("tranquilo househelp find --duration 60 --exact-date 2026-04-23 --exact-time 13:00 --exact-duration")}
   </Tab>
-  <Tab title="Fallback durations">
+  <Tab value="Fallback durations">
 ${sh("tranquilo househelp find --duration-order 60,90,30 --preset next-4-days --time-window 18:00-22:00")}
   </Tab>
 </Tabs>
@@ -649,13 +659,13 @@ function managePage(): string {
 Use this section for the Pronto context around House Help booking: saved addresses, checkout payment state, and booking history.
 
 <Cards>
-  <Card title="Addresses" icon="map-pin" href="/latest/addresses">
+  <Card title="Addresses" icon="map-pin" href="${docsHref("manage/addresses")}">
     List saved addresses and choose the active delivery/cart address used for slot search and booking.
   </Card>
-  <Card title="Payments" icon="qr-code" href="/latest/payments">
+  <Card title="Payments" icon="qr-code" href="${docsHref("manage/payments")}">
     Render local QR payment flows and inspect prepared checkout orders.
   </Card>
-  <Card title="Bookings" icon="calendar-days" href="/latest/bookings">
+  <Card title="Bookings" icon="calendar-days" href="${docsHref("manage/bookings")}">
     Inspect upcoming, past, or all Pronto bookings.
   </Card>
 </Cards>
@@ -822,7 +832,7 @@ The local MCP server exposes structured tools for agents. It is the preferred AI
 
 ${sh("tranquilo mcp")}
 
-See [MCP tools](/latest/reference/mcp-tools) for the generated tool list.
+See [MCP tools](${docsHref("agents/mcp/tools")}) for the generated tool list.
 `;
 }
 
@@ -848,81 +858,34 @@ function llmsText(metadata: ReleaseJson): string {
     `- Find slots: ${page("househelp/find")}`,
     `- Watches: ${page("househelp/watches")}`,
     `- Manage: ${page("manage")}`,
-    `- Addresses: ${page("addresses")}`,
-    `- Payments: ${page("payments")}`,
+    `- Addresses: ${page("manage/addresses")}`,
+    `- Payments: ${page("manage/payments")}`,
     `- Agent usage: ${page("agents")}`,
-    `- MCP tools: ${page("reference/mcp-tools")}`,
+    `- MCP tools: ${page("agents/mcp/tools")}`,
     "",
   ];
   return lines.join("\n");
 }
 
-function navGroups(prefix: string): NavGroup[] {
-  const withPrefix = (page: string) => `${prefix}/${page}`;
-  return [
-    {
-      group: "Get started",
-      icon: "rocket",
-      root: withPrefix("index"),
-      directory: "card",
-      pages: [withPrefix("install"), withPrefix("auth")],
-    },
-    {
-      group: "Book House Help",
-      icon: "calendar-search",
-      root: withPrefix("househelp/index"),
-      directory: "accordion",
-      pages: [
-        withPrefix("househelp/options"),
-        withPrefix("househelp/find"),
-        withPrefix("househelp/book"),
-        withPrefix("househelp/watches"),
-      ],
-    },
-    {
-      group: "Manage",
-      icon: "settings",
-      root: withPrefix("manage"),
-      directory: "accordion",
-      pages: [
-        withPrefix("addresses"),
-        withPrefix("payments"),
-        withPrefix("bookings"),
-      ],
-    },
-    {
-      group: "AI agents",
-      icon: "bot",
-      root: withPrefix("agents/index"),
-      directory: "accordion",
-      pages: [
-        withPrefix("agents/codex"),
-        withPrefix("agents/claude"),
-        {
-          group: "MCP",
-          icon: "plug",
-          root: withPrefix("agents/mcp"),
-          directory: "accordion",
-          pages: [withPrefix("reference/mcp-tools")],
-        },
-      ],
-    },
-  ];
-}
-
 async function versionHasDocs(version: string): Promise<boolean> {
   const checks = DOC_PAGE_PATHS.map((page) =>
     fs
-      .access(path.join(root, "apps/docs/versions", version, `${page}.mdx`))
+      .access(
+        path.join(
+          root,
+          "packages/docs-content/versions",
+          version,
+          `${page}.mdx`
+        )
+      )
       .then(() => true)
       .catch(() => false)
   );
   return (await Promise.all(checks)).every(Boolean);
 }
 
-async function docsJson(): Promise<string> {
-  const currentTag = tag();
-  const versionsDir = path.join(root, "apps/docs/versions");
+async function existingVersionTags(): Promise<string[]> {
+  const versionsDir = path.join(root, "packages/docs-content/versions");
   const allVersions = (
     await fs.readdir(versionsDir).catch(() => [] as string[])
   )
@@ -935,78 +898,100 @@ async function docsJson(): Promise<string> {
       versionTags.push(version);
     }
   }
-  const hasCurrentVersionDocs = versionTags.includes(currentTag);
-  const orderedVersionTags = hasCurrentVersionDocs
-    ? [currentTag, ...versionTags.filter((version) => version !== currentTag)]
-    : versionTags;
-  const versions = hasCurrentVersionDocs
-    ? orderedVersionTags.map((version) => ({
-        version,
-        ...(version === currentTag
-          ? {
-              default: true,
-              tag: "Latest",
-            }
-          : {}),
-        groups: navGroups(`versions/${version}`),
-      }))
-    : [
-        {
-          version: "Latest",
-          default: true,
-          tag: "Latest",
-          groups: navGroups("latest"),
-        },
-        ...orderedVersionTags.map((version) => ({
-          version,
-          groups: navGroups(`versions/${version}`),
-        })),
-      ];
-  return `${JSON.stringify(
+  return versionTags;
+}
+
+function docsRootMeta(): string {
+  return metaJson({
+    title: "Tranquilo Docs",
+    pages: ["latest", "versions"],
+  });
+}
+
+async function versionsMeta(): Promise<string> {
+  return metaJson({
+    title: "Versions",
+    pages: await existingVersionTags(),
+  });
+}
+
+function versionRootMeta(title: string): string {
+  return metaJson({
+    title,
+    root: true,
+    defaultOpen: true,
+    pages: ["index", "install", "auth", "househelp", "manage", "agents"],
+  });
+}
+
+function househelpMeta(): string {
+  return metaJson({
+    title: "Book House Help",
+    icon: "calendar-search",
+    defaultOpen: true,
+    pages: ["index", "options", "find", "book", "watches"],
+  });
+}
+
+function manageMeta(): string {
+  return metaJson({
+    title: "Manage",
+    icon: "settings",
+    defaultOpen: true,
+    pages: ["index", "addresses", "payments", "bookings"],
+  });
+}
+
+function agentsMeta(): string {
+  return metaJson({
+    title: "AI agents",
+    icon: "bot",
+    defaultOpen: true,
+    pages: ["index", "codex", "claude", "mcp"],
+  });
+}
+
+function mcpMeta(): string {
+  return metaJson({
+    title: "MCP",
+    icon: "plug",
+    defaultOpen: true,
+    pages: ["index", "tools"],
+  });
+}
+
+async function existingVersionMetaFiles(): Promise<GeneratedFile[]> {
+  const files: GeneratedFile[] = [
     {
-      $schema: "https://mintlify.com/docs.json",
-      theme: "mint",
-      name: "Tranquilo",
-      description:
-        "CLI and local MCP docs for Pronto House Help booking flows.",
-      colors: {
-        primary: "#0F766E",
-      },
-      icons: {
-        library: "lucide",
-      },
-      metadata: {
-        timestamp: true,
-      },
-      navigation: {
-        global: {
-          anchors: [
-            {
-              anchor: "Install",
-              icon: "download",
-              href: baseUrl,
-            },
-            {
-              anchor: "GitHub",
-              icon: "github",
-              href: `https://github.com/${repository}`,
-            },
-          ],
-        },
-        versions,
-      },
-      navbar: {
-        links: [
-          {
-            label: "Install",
-            href: baseUrl,
-          },
-        ],
-      },
+      path: "packages/docs-content/versions/meta.json",
+      content: await versionsMeta(),
     },
-    null,
-    2
-  )}\n`;
+  ];
+  for (const version of await existingVersionTags()) {
+    files.push(
+      {
+        path: `packages/docs-content/versions/${version}/meta.json`,
+        content: versionRootMeta(version),
+      },
+      {
+        path: `packages/docs-content/versions/${version}/househelp/meta.json`,
+        content: househelpMeta(),
+      },
+      {
+        path: `packages/docs-content/versions/${version}/manage/meta.json`,
+        content: manageMeta(),
+      },
+      {
+        path: `packages/docs-content/versions/${version}/agents/meta.json`,
+        content: agentsMeta(),
+      },
+      {
+        path: `packages/docs-content/versions/${version}/agents/mcp/meta.json`,
+        content: mcpMeta(),
+      }
+    );
+  }
+  return files;
 }
 
 async function generatedFiles(): Promise<GeneratedFile[]> {
@@ -1017,107 +1002,115 @@ async function generatedFiles(): Promise<GeneratedFile[]> {
 
   return [
     {
-      path: "apps/landing/generated/release.json",
+      path: "apps/site/generated/release.json",
       content: `${JSON.stringify(metadata, null, 2)}\n`,
     },
     {
-      path: "apps/docs/docs.json",
-      content: await docsJson(),
+      path: "apps/site/generated/skill.ts",
+      content: `export const skillMarkdown = ${JSON.stringify(skill)};\n`,
     },
     {
-      path: "apps/docs/latest/index.mdx",
+      path: "packages/docs-content/meta.json",
+      content: docsRootMeta(),
+    },
+    {
+      path: "packages/docs-content/latest/meta.json",
+      content: versionRootMeta("Latest"),
+    },
+    {
+      path: "packages/docs-content/latest/index.mdx",
       content: indexPage(metadata),
     },
     {
-      path: "apps/docs/latest/install.mdx",
+      path: "packages/docs-content/latest/install.mdx",
       content: installPage(metadata),
     },
     {
-      path: "apps/docs/latest/auth.mdx",
+      path: "packages/docs-content/latest/auth.mdx",
       content: authPage(),
     },
     {
-      path: "apps/docs/latest/househelp/index.mdx",
+      path: "packages/docs-content/latest/househelp/index.mdx",
       content: househelpIndexPage(),
     },
     {
-      path: "apps/docs/latest/househelp/options.mdx",
+      path: "packages/docs-content/latest/househelp/meta.json",
+      content: househelpMeta(),
+    },
+    {
+      path: "packages/docs-content/latest/househelp/options.mdx",
       content: househelpOptionsPage(),
     },
     {
-      path: "apps/docs/latest/househelp/find.mdx",
+      path: "packages/docs-content/latest/househelp/find.mdx",
       content: househelpFindPage(),
     },
     {
-      path: "apps/docs/latest/househelp/book.mdx",
+      path: "packages/docs-content/latest/househelp/book.mdx",
       content: househelpBookPage(),
     },
     {
-      path: "apps/docs/latest/househelp/watches.mdx",
+      path: "packages/docs-content/latest/househelp/watches.mdx",
       content: watchesPage(),
     },
     {
-      path: "apps/docs/latest/manage.mdx",
+      path: "packages/docs-content/latest/manage/index.mdx",
       content: managePage(),
     },
     {
-      path: "apps/docs/latest/addresses.mdx",
+      path: "packages/docs-content/latest/manage/meta.json",
+      content: manageMeta(),
+    },
+    {
+      path: "packages/docs-content/latest/manage/addresses.mdx",
       content: addressesPage(),
     },
     {
-      path: "apps/docs/latest/payments.mdx",
+      path: "packages/docs-content/latest/manage/payments.mdx",
       content: paymentsPage(),
     },
     {
-      path: "apps/docs/latest/bookings.mdx",
+      path: "packages/docs-content/latest/manage/bookings.mdx",
       content: bookingsPage(),
     },
     {
-      path: "apps/docs/latest/agents/index.mdx",
+      path: "packages/docs-content/latest/agents/index.mdx",
       content: agentsIndexPage(),
     },
     {
-      path: "apps/docs/latest/agents/codex.mdx",
+      path: "packages/docs-content/latest/agents/meta.json",
+      content: agentsMeta(),
+    },
+    {
+      path: "packages/docs-content/latest/agents/codex.mdx",
       content: codexPage(),
     },
     {
-      path: "apps/docs/latest/agents/claude.mdx",
+      path: "packages/docs-content/latest/agents/claude.mdx",
       content: claudePage(),
     },
     {
-      path: "apps/docs/latest/agents/mcp.mdx",
+      path: "packages/docs-content/latest/agents/mcp/index.mdx",
       content: mcpPage(),
     },
     {
-      path: "apps/docs/latest/reference/mcp-tools.mdx",
+      path: "packages/docs-content/latest/agents/mcp/meta.json",
+      content: mcpMeta(),
+    },
+    {
+      path: "packages/docs-content/latest/agents/mcp/tools.mdx",
       content: mcpReference(),
     },
     {
-      path: "apps/docs/skill.md",
+      path: "packages/docs-content/skill.md",
       content: skill,
     },
     {
-      path: "apps/docs/llms.txt",
+      path: "packages/docs-content/llms.txt",
       content: llmsText(metadata),
     },
+    ...(await existingVersionMetaFiles()),
   ];
-}
-
-async function removeObsoleteDocs(): Promise<void> {
-  await fs.rm(path.join(root, "apps/docs/latest/generated"), {
-    force: true,
-    recursive: true,
-  });
-  await fs.rm(path.join(root, "apps/docs/latest/reference/cli"), {
-    force: true,
-    recursive: true,
-  });
-  await fs.rm(path.join(root, "apps/docs/latest/reference/cli.mdx"), {
-    force: true,
-  });
-  await fs.rm(path.join(root, "apps/docs/latest/agents.mdx"), {
-    force: true,
-  });
 }
 
 async function writeGenerated(file: GeneratedFile): Promise<void> {
@@ -1128,8 +1121,6 @@ async function writeGenerated(file: GeneratedFile): Promise<void> {
 
 async function run(): Promise<void> {
   await command("bun", ["--filter=tranquilo", "run", "agent-assets:generate"]);
-
-  await removeObsoleteDocs();
 
   for (const file of await generatedFiles()) {
     await writeGenerated(file);

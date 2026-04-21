@@ -6,22 +6,29 @@
       "dependsOn": ["^transit"]
     },
     "//#generate:assets": {
-      "description": "Generate committed Mintlify docs plus ignored landing metadata, skill, Claude command, and MCPB artifacts.",
+      "description": "Generate committed Fumadocs content plus ignored site metadata, skill, Claude command, and MCPB artifacts.",
       "inputs": [
         "package.json",
         "scripts/generate-product-assets.ts",
         "apps/cli/package.json",
         "apps/cli/src/cli.ts",
         "apps/cli/scripts/generate-agent-assets.ts",
-        "packages/product/src/**",
-        "apps/docs/versions/**"
+        "packages/cli-model/src/**",
+        "packages/site-model/src/**",
+        "packages/docs-content/versions/**"
       ],
       "outputs": [
-        "apps/landing/generated/**",
-        "apps/docs/docs.json",
-        "apps/docs/latest/**",
-        "apps/docs/llms.txt",
-        "apps/docs/skill.md",
+        "apps/site/generated/**",
+        "packages/docs-content/meta.json",
+        "packages/docs-content/latest/**",
+        "packages/docs-content/versions/meta.json",
+        "packages/docs-content/versions/*/meta.json",
+        "packages/docs-content/versions/*/househelp/meta.json",
+        "packages/docs-content/versions/*/manage/meta.json",
+        "packages/docs-content/versions/*/agents/meta.json",
+        "packages/docs-content/versions/*/agents/mcp/meta.json",
+        "packages/docs-content/llms.txt",
+        "packages/docs-content/skill.md",
         "apps/cli/assets/codex-skill/**",
         "apps/cli/assets/claude-commands/tranquilo/**",
         "apps/cli/mcpb/manifest.json"

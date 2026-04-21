@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { PACKAGE_METADATA } from "../packages/product/src/release-metadata";
+import { PACKAGE_METADATA } from "../packages/cli-model/src/release-metadata";
 
 const root = path.resolve(new URL("..", import.meta.url).pathname);
 const tag = PACKAGE_METADATA.version.startsWith("v")
@@ -8,8 +8,8 @@ const tag = PACKAGE_METADATA.version.startsWith("v")
   : `v${PACKAGE_METADATA.version}`;
 const force = process.argv.includes("--force");
 
-const source = path.join(root, "apps/docs/latest");
-const target = path.join(root, "apps/docs/versions", tag);
+const source = path.join(root, "packages/docs-content/latest");
+const target = path.join(root, "packages/docs-content/versions", tag);
 const LATEST_INSTALL_COMMAND_RE =
   /curl -fsSL (?<origin>https?:\/\/[^/\s]+)\/install\.sh \| sh/gu;
 
@@ -38,19 +38,20 @@ async function rewriteVersionLinks(dir: string): Promise<void> {
       await rewriteVersionLinks(file);
       continue;
     }
-    if (!entry.name.endsWith(".mdx")) {
+    if (!entry.name.endsWith(".mdx") && entry.name !== "meta.json") {
       continue;
     }
     const content = await fs.readFile(file, "utf8");
     const rewritten = content
-      .replaceAll('href="/latest/', `href="/versions/${tag}/`)
-      .replaceAll("](/latest/", `](/versions/${tag}/`)
+      .replaceAll('href="/docs/latest/', `href="/docs/versions/${tag}/`)
+      .replaceAll("](/docs/latest/", `](/docs/versions/${tag}/`)
       .replace(
         LATEST_INSTALL_COMMAND_RE,
         (_command: string, origin: string) =>
           `curl -fsSL ${origin}/releases/${tag}/install.sh | sh`
       )
-      .replaceAll("Latest CLI version:", "CLI version:");
+      .replaceAll("Latest CLI version:", "CLI version:")
+      .replace('"title": "Latest"', `"title": "${tag}"`);
     if (rewritten !== content) {
       await fs.writeFile(file, rewritten);
     }

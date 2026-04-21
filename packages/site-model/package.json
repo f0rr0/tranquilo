@@ -1,0 +1,27 @@
+{
+  "name": "@tranquilo/site-model",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./install-routes": "./src/install-routes.ts"
+  },
+  "scripts": {
+    "lint": "ultracite check .",
+    "typecheck": "tsgo --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "build": "tsgo --noEmit -p tsconfig.json",
+    "validate": "bun run lint && bun run typecheck && bun run test && bun run build"
+  },
+  "dependencies": {
+    "@tranquilo/cli-model": "workspace:*",
+    "fflate": "catalog:cli"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:tooling",
+    "@types/node": "catalog:tooling",
+    "@typescript/native-preview": "catalog:tooling",
+    "ultracite": "catalog:tooling",
+    "vitest": "catalog:tooling"
+  }
+}

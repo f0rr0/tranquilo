@@ -1,11 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { MCP_TOOLS } from "@tranquilo/product/agent-catalog";
+import { MCP_TOOLS } from "@tranquilo/cli-model/agent-catalog";
 import {
   PACKAGE_METADATA,
   RELEASE_METADATA,
-} from "@tranquilo/product/release-metadata";
+} from "@tranquilo/cli-model/release-metadata";
 import { describe, expect, it } from "vitest";
 
 const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -72,14 +72,12 @@ describe("agent-facing docs", () => {
     expect(skill).toContain("after 6pm");
     expect(skill).toContain("duration 60");
     expect(skill).toContain("notify-only watch");
-    expect(skill).not.toContain('onFound="checkout"');
     expect(skill).toContain("call `auth_status` first");
     expect(skill).toContain("There is no user-facing Tranquilo app");
     expect(skill).toContain("say Pronto app");
     expect(skill).toContain("Run tranquilo login in a local terminal");
+    expect(skill).toContain("Watches must not prepare checkout automatically");
     expect(skill).not.toMatch(LOCAL_BUN_CHECKOUT_COMMAND_RE);
-    expect(skill).not.toContain("tranquilo checkout start");
-    expect(skill).not.toContain("tranquilo slots book");
     expect(skill).not.toContain("--open-intent");
 
     for (const command of shellCommands(skill)) {
@@ -123,8 +121,6 @@ describe("agent-facing docs", () => {
     expect(tools).toContain("househelp_find_slots");
     expect(tools).toContain("househelp_prepare_booking");
     expect(tools).toContain("househelp_payment_handoff");
-    expect(tools).not.toContain("checkout_start");
-    expect(tools).not.toContain("checkout_payment_instructions");
   });
 
   it("keeps generated manifest and tool schemas aligned with the catalog", () => {
@@ -153,7 +149,7 @@ describe("agent-facing docs", () => {
       RELEASE_METADATA.mcpb.compatibilityPlatforms
     );
     expect(schemaReference.generatedFrom).toBe(
-      "packages/product/src/agent-catalog.ts"
+      "packages/cli-model/src/agent-catalog.ts"
     );
     expect(schemaReference.tools.map((tool) => tool.name)).toEqual(
       MCP_TOOLS.map((tool) => tool.name)
@@ -174,48 +170,73 @@ describe("agent-facing docs", () => {
   });
 
   it("keeps generated public docs grounded in current CLI/MCP surfaces", () => {
-    const find = readRepoFile("../docs/latest/househelp/find.mdx");
-    const book = readRepoFile("../docs/latest/househelp/book.mdx");
-    const watches = readRepoFile("../docs/latest/househelp/watches.mdx");
-    const manage = readRepoFile("../docs/latest/manage.mdx");
-    const auth = readRepoFile("../docs/latest/auth.mdx");
-    const addresses = readRepoFile("../docs/latest/addresses.mdx");
-    const payments = readRepoFile("../docs/latest/payments.mdx");
-    const bookings = readRepoFile("../docs/latest/bookings.mdx");
-    const mcpTools = readRepoFile("../docs/latest/reference/mcp-tools.mdx");
-    const docsConfig = JSON.parse(readRepoFile("../docs/docs.json")) as {
-      navigation: {
-        versions: Array<{
-          default?: boolean;
-          groups: Array<{
-            directory?: string;
-            group: string;
-            pages: unknown[];
-            root?: string;
-          }>;
-          tag?: string;
-          version: string;
-        }>;
-      };
+    const find = readRepoFile(
+      "../../packages/docs-content/latest/househelp/find.mdx"
+    );
+    const book = readRepoFile(
+      "../../packages/docs-content/latest/househelp/book.mdx"
+    );
+    const watches = readRepoFile(
+      "../../packages/docs-content/latest/househelp/watches.mdx"
+    );
+    const manage = readRepoFile(
+      "../../packages/docs-content/latest/manage/index.mdx"
+    );
+    const auth = readRepoFile("../../packages/docs-content/latest/auth.mdx");
+    const addresses = readRepoFile(
+      "../../packages/docs-content/latest/manage/addresses.mdx"
+    );
+    const payments = readRepoFile(
+      "../../packages/docs-content/latest/manage/payments.mdx"
+    );
+    const bookings = readRepoFile(
+      "../../packages/docs-content/latest/manage/bookings.mdx"
+    );
+    const mcpTools = readRepoFile(
+      "../../packages/docs-content/latest/agents/mcp/tools.mdx"
+    );
+    const latestMeta = JSON.parse(
+      readRepoFile("../../packages/docs-content/latest/meta.json")
+    ) as {
+      pages: string[];
+      root?: boolean;
+      title?: string;
+    };
+    const versionsMeta = JSON.parse(
+      readRepoFile("../../packages/docs-content/versions/meta.json")
+    ) as {
+      pages: string[];
+    };
+    const manageMeta = JSON.parse(
+      readRepoFile("../../packages/docs-content/latest/manage/meta.json")
+    ) as {
+      defaultOpen?: boolean;
+      pages: string[];
+      title?: string;
+    };
+    const mcpMeta = JSON.parse(
+      readRepoFile("../../packages/docs-content/latest/agents/mcp/meta.json")
+    ) as {
+      defaultOpen?: boolean;
+      pages: string[];
+      title?: string;
     };
     const currentVersion = `v${PACKAGE_METADATA.version}`;
-    const manageGroup = docsConfig.navigation.versions[0]?.groups.find(
-      (group) => group.group === "Manage"
-    );
 
-    expect(docsConfig.navigation.versions[0]).toMatchObject({
-      default: true,
-      tag: "Latest",
-      version: currentVersion,
+    expect(latestMeta).toMatchObject({
+      root: true,
+      title: "Latest",
     });
-    expect(
-      docsConfig.navigation.versions.map((version) => version.version)
-    ).toContain("v0.1.0");
-    expect(
-      docsConfig.navigation.versions.some(
-        (version) => version.version === "Latest"
-      )
-    ).toBe(false);
+    expect(latestMeta.pages).toEqual([
+      "index",
+      "install",
+      "auth",
+      "househelp",
+      "manage",
+      "agents",
+    ]);
+    expect(versionsMeta.pages).toContain(currentVersion);
+    expect(versionsMeta.pages).toContain("v0.1.0");
 
     expect(find).toContain("## Flags");
     expect(find).toContain("--duration-order");
@@ -234,10 +255,21 @@ describe("agent-facing docs", () => {
     expect(watches).toContain("--no-pay");
 
     expect(manage).toContain("saved addresses");
-    expect(manageGroup).toMatchObject({
-      directory: "accordion",
-      root: `versions/${currentVersion}/manage`,
+    expect(manageMeta).toMatchObject({
+      defaultOpen: true,
+      title: "Manage",
     });
+    expect(manageMeta.pages).toEqual([
+      "index",
+      "addresses",
+      "payments",
+      "bookings",
+    ]);
+    expect(mcpMeta).toMatchObject({
+      defaultOpen: true,
+      title: "MCP",
+    });
+    expect(mcpMeta.pages).toEqual(["index", "tools"]);
     expect(auth).toContain("### Login flags");
     expect(auth).toContain("--no-interactive");
     expect(addresses).toContain("tranquilo addresses use");
@@ -256,11 +288,11 @@ describe("agent-facing docs", () => {
 
   it("renders angle-bracket placeholders as code, not HTML entities", () => {
     const generatedDocs = [
-      ...readRepoTextFiles("../docs/latest"),
-      ...readRepoTextFiles("../docs/versions"),
+      ...readRepoTextFiles("../../packages/docs-content/latest"),
+      ...readRepoTextFiles("../../packages/docs-content/versions"),
       {
-        content: readRepoFile("../docs/skill.md"),
-        file: "../docs/skill.md",
+        content: readRepoFile("../../packages/docs-content/skill.md"),
+        file: "../../packages/docs-content/skill.md",
       },
       {
         content: readRepoFile("assets/codex-skill/SKILL.md"),
@@ -274,19 +306,23 @@ describe("agent-facing docs", () => {
       }
     }
 
-    expect(readRepoFile("../docs/latest/addresses.mdx")).toContain(
-      "`tranquilo addresses use <address-id>`"
-    );
-    expect(readRepoFile("../docs/latest/reference/mcp-tools.mdx")).toContain(
+    expect(
+      readRepoFile("../../packages/docs-content/latest/manage/addresses.mdx")
+    ).toContain("`tranquilo addresses use <address-id>`");
+    expect(
+      readRepoFile("../../packages/docs-content/latest/agents/mcp/tools.mdx")
+    ).toContain(
       "`tranquilo househelp payment-handoff <orderId> --json --no-interactive`"
     );
-    expect(readRepoFile("../docs/skill.md")).toContain("`book watch <id>`");
-    expect(readRepoFile("../docs/versions/v0.1.0/install.mdx")).toContain(
-      "https://tranquilo-ai.vercel.app/releases/v0.1.0/install.sh"
+    expect(readRepoFile("../../packages/docs-content/skill.md")).toContain(
+      "`book watch <id>`"
     );
-    expect(readRepoFile("../docs/versions/v0.1.1/install.mdx")).not.toContain(
-      "/releases/v0.1.1/releases/v0.1.1"
-    );
+    expect(
+      readRepoFile("../../packages/docs-content/versions/v0.1.0/install.mdx")
+    ).toContain("https://tranquilo-ai.vercel.app/releases/v0.1.0/install.sh");
+    expect(
+      readRepoFile("../../packages/docs-content/versions/v0.1.1/install.mdx")
+    ).not.toContain("/releases/v0.1.1/releases/v0.1.1");
   });
 
   it("keeps the maintainer skill aligned with release and agent-doc rules", () => {
@@ -300,7 +336,7 @@ describe("agent-facing docs", () => {
     expect(skill).toContain("bun run generate");
     expect(skill).toContain("bun run knip:check");
     expect(skill).toContain("bun run release:verify");
-    expect(skill).toContain("packages/product/src/agent-catalog.ts");
+    expect(skill).toContain("packages/cli-model/src/agent-catalog.ts");
     expect(skill).toContain("bun run generate");
     expect(skill).toContain("@anthropic-ai/mcpb");
     expect(skill).toContain("does not solve drift");

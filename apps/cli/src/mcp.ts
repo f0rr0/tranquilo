@@ -14,8 +14,8 @@ import {
   type IdOnlyInput,
   type McpToolName,
   toolByName,
-} from "@tranquilo/product/agent-catalog";
-import { PACKAGE_METADATA } from "@tranquilo/product/release-metadata";
+} from "@tranquilo/cli-model/agent-catalog";
+import { PACKAGE_METADATA } from "@tranquilo/cli-model/release-metadata";
 import { activeAddressIdFromCart, normalizeAddresses } from "./address";
 import { loadConfig } from "./config";
 import { createClient, errorToJson, resolveLocation } from "./context";

@@ -6,7 +6,6 @@ import { Temporal } from "@js-temporal/polyfill";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createSlotWatch,
-  listSlotWatches,
   nextRunAtForWatch,
   resolveDateRange,
   resolveWindow,
@@ -469,7 +468,7 @@ describe("slot watch run-due integration", () => {
     ).toEqual(["/gateway/users/addresses", "/gateway/bookings/slots/by-skill"]);
   });
 
-  it("does not create checkout from watches, including legacy checkout watches", async () => {
+  it("does not create checkout from watches", async () => {
     const watch = await createSlotWatch(
       {
         addressId: "a1",
@@ -497,60 +496,6 @@ describe("slot watch run-due integration", () => {
         (call) => `${call.method} ${new URL(call.url ?? "", baseUrl).pathname}`
       )
     ).not.toContain("POST /gateway/cart/checkout");
-  });
-
-  it("strips legacy checkout-on-found state from loaded watches", async () => {
-    await fs.writeFile(
-      path.join(tempDir, "slot-watches.json"),
-      `${JSON.stringify(
-        {
-          version: 1,
-          watches: [
-            {
-              createdAt: "2026-04-20T08:00:00Z",
-              foundMatch: {
-                checkoutCommand: "tranquilo checkout pay order-1",
-                checkoutOrderId: "order-1",
-                checkoutPayCommand: "tranquilo checkout pay order-1",
-                checkoutStatus: "created",
-                endTime: "2026-04-20T19:00:00",
-                isExperiencingSurge: false,
-                slotsLeft: 1,
-                startTime: "2026-04-20T18:30:00",
-              },
-              id: "sw_legacy",
-              runCount: 1,
-              spec: {
-                bookingType: "SCHEDULED",
-                dateRange: { from: "2026-04-20", to: "2026-04-20" },
-                itemIds: ["44"],
-                location: { addressId: "a1", source: "address" },
-                onFound: "checkout",
-                timezone: "UTC",
-                window: { preset: "after-work" },
-              },
-              status: "found",
-              updatedAt: "2026-04-20T08:00:00Z",
-            },
-          ],
-        },
-        null,
-        2
-      )}\n`
-    );
-
-    const [watch] = await listSlotWatches();
-
-    expect(watch?.spec).not.toHaveProperty("onFound");
-    expect(watch?.foundMatch).toEqual({
-      actionCommand: undefined,
-      actionHint: undefined,
-      endTime: "2026-04-20T19:00:00",
-      isExperiencingSurge: false,
-      slotsLeft: 1,
-      startTime: "2026-04-20T18:30:00",
-      surgePrice: undefined,
-    });
   });
 
   it("sends Slack webhook notifications without desktop notification", async () => {

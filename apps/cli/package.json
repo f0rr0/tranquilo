@@ -10,8 +10,7 @@
   "files": [
     "dist",
     "assets",
-    "mcpb",
-    "scripts"
+    "mcpb"
   ],
   "scripts": {
     "dev": "bun src/index.ts",
@@ -34,7 +33,7 @@
     "@inquirer/prompts": "catalog:cli",
     "@js-temporal/polyfill": "catalog:cli",
     "@modelcontextprotocol/server": "catalog:cli",
-    "@tranquilo/product": "workspace:*",
+    "@tranquilo/cli-model": "workspace:*",
     "@visulima/tabular": "catalog:cli",
     "citty": "catalog:cli",
     "clipboardy": "catalog:cli",
@@ -49,12 +48,12 @@
     "@types/node": "catalog:tooling",
     "@types/qrcode": "catalog:tooling",
     "@typescript/native-preview": "catalog:tooling",
-    "fflate": "catalog:cli",
     "tsdown": "catalog:tooling",
     "ultracite": "catalog:tooling",
     "vitest": "catalog:tooling"
   },
   "tranquilo": {
+    "publicBaseUrl": "https://tranquilo-ai.vercel.app",
     "release": {
       "prTargets": [
         {

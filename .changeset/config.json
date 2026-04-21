@@ -5,10 +5,14 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "ignore": ["@tranquilo/docs", "@tranquilo/landing"],
+  "ignore": [
+    "@tranquilo/docs-content",
+    "@tranquilo/site",
+    "@tranquilo/site-model"
+  ],
   "linked": [],
   "privatePackages": {
-    "tag": true,
+    "tag": false,
     "version": true
   },
   "updateInternalDependencies": "patch"

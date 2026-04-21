@@ -1,0 +1,38 @@
+{
+  "name": "@tranquilo/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "docs:typegen": "fumadocs-mdx source.config.ts .source",
+    "dev": "next dev --port 3000",
+    "lint": "ultracite check .",
+    "typecheck": "bun run docs:typegen && tsgo --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "build": "bun run docs:typegen && next build",
+    "validate": "bun run lint && bun run typecheck && bun run test && bun run build"
+  },
+  "dependencies": {
+    "@tranquilo/site-model": "workspace:*",
+    "fumadocs-core": "catalog:docs",
+    "fumadocs-mdx": "catalog:docs",
+    "fumadocs-ui": "catalog:docs",
+    "lucide-react": "catalog:docs",
+    "next": "catalog:web",
+    "react": "catalog:web",
+    "react-dom": "catalog:web",
+    "tailwindcss": "catalog:docs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:tooling",
+    "@tailwindcss/postcss": "catalog:docs",
+    "@types/mdx": "catalog:docs",
+    "@types/node": "catalog:tooling",
+    "@types/react": "catalog:web",
+    "@types/react-dom": "catalog:web",
+    "@typescript/native-preview": "catalog:tooling",
+    "postcss": "catalog:docs",
+    "ultracite": "catalog:tooling",
+    "vitest": "catalog:tooling"
+  }
+}

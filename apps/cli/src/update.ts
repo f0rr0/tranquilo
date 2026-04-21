@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { PACKAGE_METADATA } from "@tranquilo/product/release-metadata";
+import { PACKAGE_METADATA } from "@tranquilo/cli-model/release-metadata";
 import { execa } from "execa";
 import { stateDir } from "./paths";
 
@@ -16,7 +16,7 @@ interface UpdateResponse {
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const UPDATE_URL =
   process.env.TRANQUILO_UPDATE_URL ??
-  "https://tranquilo-ai.vercel.app/api/cli/update";
+  `${PACKAGE_METADATA.publicBaseUrl}/api/cli/update`;
 
 function cachePath(): string {
   return path.join(stateDir(), "update-check.json");
@@ -151,7 +151,7 @@ export async function updateAction(): Promise<string> {
   const update = await checkForUpdate({ force: true });
   const command =
     update?.installCommand ??
-    "curl -fsSL https://tranquilo-ai.vercel.app/install.sh | sh";
+    `curl -fsSL ${PACKAGE_METADATA.publicBaseUrl}/install.sh | sh`;
   await execa("sh", ["-c", command], { stdio: "inherit" });
   return "";
 }

@@ -1,5 +1,6 @@
 {
-  "installCommand": "bun install --frozen-lockfile",
-  "buildCommand": "bun turbo run build --filter=@tranquilo/landing",
-  "outputDirectory": ".next"
+  "framework": "nextjs",
+  "installCommand": "bunx bun@1.3.13 install --frozen-lockfile",
+  "buildCommand": "bunx bun@1.3.13 turbo run build --filter=@tranquilo/site",
+  "outputDirectory": "apps/site/.next"
 }

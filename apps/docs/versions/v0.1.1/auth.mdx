@@ -1,0 +1,47 @@
+---
+title: "Auth"
+description: "Login, credential storage, and local status commands."
+icon: "key-round"
+---
+
+# Auth
+
+Tranquilo authenticates with Pronto using the phone OTP flow captured from the app. Credentials are stored in OS credential storage when available, with non-secret config in the local app config directory.
+
+<Warning>
+  Do not paste OTPs into AI chat. If an agent finds you are not logged in, it should tell you to run `tranquilo login` locally.
+</Warning>
+
+## Local commands
+
+| Command | Description |
+| --- | --- |
+| `tranquilo login` | Start phone OTP login and store credentials |
+| `tranquilo logout` | Clear stored credentials |
+| `tranquilo status` | Show auth and config status |
+| `tranquilo whoami` | Show current user profile |
+| `tranquilo doctor` | Check local setup |
+
+### Login flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--phone <number>` | No | Mobile number |
+| `--otp <code>` | No | OTP code; prefer interactive prompt for normal use |
+| `--json` | No | Print JSON |
+| `--no-interactive` | No | Never prompt; fail if more input is required |
+
+### Status flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--json` | No | Print JSON |
+| `--no-interactive` | No | Never prompt; fail if more input is required |
+
+### Doctor flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--secrets` | No | Also check credential storage and auth state |
+
+Use `tranquilo status --json --no-interactive` only as a CLI fallback for agents when MCP is unavailable.

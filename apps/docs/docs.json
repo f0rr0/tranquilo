@@ -86,6 +86,63 @@
             ]
           }
         ]
+      },
+      {
+        "version": "v0.1.1",
+        "groups": [
+          {
+            "group": "Get started",
+            "icon": "rocket",
+            "root": "versions/v0.1.1/index",
+            "directory": "card",
+            "pages": [
+              "versions/v0.1.1/install",
+              "versions/v0.1.1/auth"
+            ]
+          },
+          {
+            "group": "Book House Help",
+            "icon": "calendar-search",
+            "root": "versions/v0.1.1/househelp/index",
+            "directory": "accordion",
+            "pages": [
+              "versions/v0.1.1/househelp/options",
+              "versions/v0.1.1/househelp/find",
+              "versions/v0.1.1/househelp/book",
+              "versions/v0.1.1/househelp/watches"
+            ]
+          },
+          {
+            "group": "Manage",
+            "icon": "settings",
+            "root": "versions/v0.1.1/manage",
+            "directory": "accordion",
+            "pages": [
+              "versions/v0.1.1/addresses",
+              "versions/v0.1.1/payments",
+              "versions/v0.1.1/bookings"
+            ]
+          },
+          {
+            "group": "AI agents",
+            "icon": "bot",
+            "root": "versions/v0.1.1/agents/index",
+            "directory": "accordion",
+            "pages": [
+              "versions/v0.1.1/agents/codex",
+              "versions/v0.1.1/agents/claude",
+              {
+                "group": "MCP",
+                "icon": "plug",
+                "root": "versions/v0.1.1/agents/mcp",
+                "directory": "accordion",
+                "pages": [
+                  "versions/v0.1.1/reference/mcp-tools"
+                ]
+              }
+            ]
+          }
+        ]
       }
     ]
   },

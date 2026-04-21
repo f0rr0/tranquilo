@@ -1,6 +1,6 @@
 # Tranquilo
 
-Latest version: 0.1.0
+Latest version: 0.1.1
 Install: https://tranquilo-ai.vercel.app/install.sh
 Docs: https://tranquilo-ai.vercel.app/docs/latest
 Skill: https://tranquilo-ai.vercel.app/docs/skill.md

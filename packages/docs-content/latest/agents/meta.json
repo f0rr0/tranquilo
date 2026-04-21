@@ -1,0 +1,6 @@
+{
+  "title": "AI agents",
+  "icon": "bot",
+  "defaultOpen": true,
+  "pages": ["index", "codex", "claude", "mcp"]
+}

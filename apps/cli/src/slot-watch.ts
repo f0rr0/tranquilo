@@ -25,13 +25,7 @@ const SLOT_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/;
 const SHELL_SAFE_PATTERN = /^[A-Za-z0-9_./:=@-]+$/;
 
 export type WatchStatus = "enabled" | "expired" | "found" | "paused";
-type DatePreset =
-  | "next-4-days"
-  | "next-7-days"
-  | "next-weekend"
-  | "today"
-  | "tomorrow"
-  | "weekend";
+type DatePreset = "next-4-days" | "today" | "tomorrow" | "weekend";
 type WindowPreset =
   | "after-work"
   | "any"
@@ -171,43 +165,13 @@ function emptyStore(): SlotWatchStore {
   return { version: STORE_VERSION, watches: [] };
 }
 
-function normalizeWatchMatch(
-  match: SlotWatchMatch | undefined
-): SlotWatchMatch | undefined {
-  if (!match?.startTime) {
-    return;
-  }
-  return {
-    actionCommand: match.actionCommand,
-    actionHint: match.actionHint,
-    endTime: match.endTime,
-    isExperiencingSurge: match.isExperiencingSurge,
-    slotsLeft: match.slotsLeft,
-    startTime: match.startTime,
-    surgePrice: match.surgePrice,
-  };
-}
-
-function normalizeSlotWatch(watch: SlotWatch): SlotWatch {
-  const { onFound: _legacyOnFound, ...spec } = watch.spec as SlotWatchSpec & {
-    onFound?: unknown;
-  };
-  return {
-    ...watch,
-    foundMatch: normalizeWatchMatch(watch.foundMatch),
-    spec,
-  };
-}
-
 async function loadSlotWatchStore(): Promise<SlotWatchStore> {
   try {
     const text = await fs.readFile(slotWatchPath(), "utf8");
     const parsed = JSON.parse(text) as SlotWatchStore;
     return {
       version: STORE_VERSION,
-      watches: Array.isArray(parsed.watches)
-        ? parsed.watches.map(normalizeSlotWatch)
-        : [],
+      watches: Array.isArray(parsed.watches) ? parsed.watches : [],
     };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -341,16 +305,7 @@ export function resolveDateRange(
   }
 
   const preset = input.preset ?? DEFAULT_PRESET;
-  if (
-    ![
-      "next-4-days",
-      "next-7-days",
-      "next-weekend",
-      "today",
-      "tomorrow",
-      "weekend",
-    ].includes(preset)
-  ) {
+  if (!["next-4-days", "today", "tomorrow", "weekend"].includes(preset)) {
     throw new TranquiloError(`Unsupported date preset "${preset}".`, {
       code: "INVALID_DATE_PRESET",
     });
@@ -363,10 +318,8 @@ export function resolveDateRange(
     const tomorrow = today.add({ days: 1 });
     return { from: tomorrow.toString(), preset, to: tomorrow.toString() };
   }
-  if (preset === "weekend" || preset === "next-weekend") {
-    const saturday = nextSaturday(today).add({
-      days: preset === "next-weekend" ? 7 : 0,
-    });
+  if (preset === "weekend") {
+    const saturday = nextSaturday(today);
     assertBookableDateRange(
       { from: saturday, to: saturday.add({ days: 1 }) },
       today
@@ -1071,10 +1024,6 @@ function schedulerRunnerPath(): string {
   return path.join(stateDir(), "Tranquilo");
 }
 
-function legacySchedulerRunnerPath(): string {
-  return path.join(stateDir(), "tranquilo-slot-watch-runner");
-}
-
 function systemdUserDir(): string {
   return path.join(
     process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config"),
@@ -1090,7 +1039,6 @@ export async function installSlotWatchScheduler(): Promise<
     await ensureStateDir();
     const runner = schedulerRunnerPath();
     await fs.writeFile(runner, schedulerRunnerScript(), { mode: 0o755 });
-    await fs.rm(legacySchedulerRunnerPath(), { force: true });
     const files = schedulerFiles(
       { args: [], command: runner },
       { appendRunDue: false }
@@ -1106,7 +1054,6 @@ export async function installSlotWatchScheduler(): Promise<
     await ensureStateDir();
     const runner = schedulerRunnerPath();
     await fs.writeFile(runner, schedulerRunnerScript(), { mode: 0o755 });
-    await fs.rm(legacySchedulerRunnerPath(), { force: true });
     const files = schedulerFiles(
       { args: [], command: runner },
       { appendRunDue: false }
@@ -1164,7 +1111,6 @@ export async function uninstallSlotWatchScheduler(): Promise<
     await execa("launchctl", ["unload", file], { reject: false });
     await fs.rm(file, { force: true });
     await fs.rm(schedulerRunnerPath(), { force: true });
-    await fs.rm(legacySchedulerRunnerPath(), { force: true });
     return { installed: false, platform: "darwin", path: file };
   }
   if (process.platform === "linux") {
@@ -1181,7 +1127,6 @@ export async function uninstallSlotWatchScheduler(): Promise<
     });
     await fs.rm(path.join(dir, "tranquilo-slot-watch.timer"), { force: true });
     await fs.rm(schedulerRunnerPath(), { force: true });
-    await fs.rm(legacySchedulerRunnerPath(), { force: true });
     await execa("systemctl", ["--user", "daemon-reload"], { reject: false });
     return { installed: false, platform: "linux", path: dir };
   }
@@ -1193,7 +1138,6 @@ export async function uninstallSlotWatchScheduler(): Promise<
       "/F",
     ]);
     await fs.rm(schedulerRunnerPath(), { force: true });
-    await fs.rm(legacySchedulerRunnerPath(), { force: true });
     return {
       installed: false,
       platform: "win32",

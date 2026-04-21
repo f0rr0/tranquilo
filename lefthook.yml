@@ -14,7 +14,7 @@ pre-commit:
       run: bun run knip:check
 
 pre-push:
-  parallel: true
+  parallel: false
   commands:
     generate:
       run: bun run generate:check

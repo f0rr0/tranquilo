@@ -110,6 +110,9 @@ jobs:
       - uses: actions/github-script@v9
         with:
           script: |
+            const fs = require("node:fs");
+            const packageJson = JSON.parse(fs.readFileSync("apps/cli/package.json", "utf8"));
+            const publicBaseUrl = packageJson.tranquilo.publicBaseUrl.replace(/\/+$/, "");
             const marker = "<!-- tranquilo-pr-preview -->";
             const pr = context.payload.pull_request.number;
             const body = [
@@ -119,7 +122,7 @@ jobs:
               "Install the latest macOS preview build for this PR:",
               "",
               "```sh",
-              `curl -fsSL https://tranquilo-ai.vercel.app/pr/${pr}/install.sh | sh`,
+              "curl -fsSL " + publicBaseUrl + "/pr/" + pr + "/install.sh | sh",
               "```",
               "",
               "Preview builds are macOS-only and expire with GitHub Actions artifact retention.",

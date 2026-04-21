@@ -6,7 +6,8 @@ dist-release/
 apps/*/.next/
 apps/*/dist/
 apps/*/dist-release/
-apps/landing/generated/
+apps/site/generated/
+apps/site/.source/
 apps/cli/assets/codex-skill/SKILL.md
 apps/cli/assets/codex-skill/agents/openai.yaml
 apps/cli/assets/codex-skill/references/

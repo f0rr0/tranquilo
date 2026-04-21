@@ -1,0 +1,6 @@
+{
+  "title": "Book House Help",
+  "icon": "calendar-search",
+  "defaultOpen": true,
+  "pages": ["index", "options", "find", "book", "watches"]
+}

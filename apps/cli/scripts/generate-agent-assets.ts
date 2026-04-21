@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { AGENT_CATALOG, MCP_TOOLS } from "@tranquilo/product/agent-catalog";
+import { AGENT_CATALOG, MCP_TOOLS } from "@tranquilo/cli-model/agent-catalog";
 import {
   PACKAGE_METADATA,
   RELEASE_METADATA,
-} from "@tranquilo/product/release-metadata";
+} from "@tranquilo/cli-model/release-metadata";
 import { z } from "zod/v4";
 
 const { agentSafeCliCommands, localAgentCliCommands, productLanguage } =
@@ -111,7 +111,7 @@ Do not use \`tranquilo checkout pay <orderId>\` as the normal local booking path
 
 function mcpToolsJson(): string {
   return json({
-    generatedFrom: "packages/product/src/agent-catalog.ts",
+    generatedFrom: "packages/cli-model/src/agent-catalog.ts",
     tools: MCP_TOOLS.map((tool) => ({
       name: tool.name,
       title: tool.title,

@@ -1,0 +1,22 @@
+{
+  "name": "@tranquilo/docs-content",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "bun ../../scripts/generate-product-assets.ts",
+    "dev": "bun --filter=@tranquilo/site run dev",
+    "lint": "ultracite check .",
+    "typecheck": "tsgo --noEmit -p tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "build": "bun run lint && bun run typecheck",
+    "validate": "bun run lint && bun run typecheck && bun run test && bun run build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "catalog:tooling",
+    "@types/node": "catalog:tooling",
+    "@typescript/native-preview": "catalog:tooling",
+    "ultracite": "catalog:tooling",
+    "vitest": "catalog:tooling"
+  }
+}

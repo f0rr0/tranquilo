@@ -9,7 +9,7 @@ icon: "badge-check"
 Booking is a mutating local-terminal flow. Tranquilo rechecks the selected slot, sets the correct cart item, creates checkout, prints a QR/payment page handoff when available, polls payment, and finalizes the Pronto booking.
 
 ```sh
-tranquilo househelp book --duration 60 --slot "tomorrow 6pm" --address-id 990330 --pay
+tranquilo househelp book --duration 60 --slot "tomorrow 6pm" --address-id 990330 --pay --upi-app phonepe
 ```
 
 <Warning>
@@ -45,6 +45,7 @@ tranquilo househelp book --duration 60 --slot "tomorrow 6pm" --address-id 990330
 | `--copy-link` | No | Copy the UPI URI to clipboard during payment |
 | `--save-qr <path>` | No | Save payment QR image to path |
 | `--qr-size <size>` | No | Terminal QR size for --pay Allowed values: `compact`, `small`, `normal`. Default: `compact`. |
+| `--upi-app <app>` | No | UPI app to route payment through; required for --pay until a local preference is saved Allowed values: `phonepe`, `googlepay`, `paytm`. |
 | `--interval-ms <ms>` | No | Payment poll interval for --pay |
 | `--timeout-ms <ms>` | No | Payment poll timeout for --pay |
 | `--json` | No | Print JSON |
@@ -52,4 +53,4 @@ tranquilo househelp book --duration 60 --slot "tomorrow 6pm" --address-id 990330
 
 ## Agent behavior
 
-Local terminal agents may run this command after the user says to book and confirms any ambiguity. Hosted or web agents should use MCP to prepare a handoff and tell the user to complete payment locally.
+Local terminal agents may run this command after the user says to book and confirms any ambiguity. If no UPI preference exists, ask the user whether to use PhonePe, Google Pay, or Paytm and pass the answer as `--upi-app`. Hosted or web agents should use MCP to prepare a handoff and tell the user to complete payment locally.

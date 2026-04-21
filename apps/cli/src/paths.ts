@@ -69,6 +69,10 @@ export function configPath(): string {
   return path.join(configDir(), "config.toml");
 }
 
+export function paymentPreferencesPath(): string {
+  return path.join(configDir(), "payment-preferences.json");
+}
+
 export function fallbackSecretPath(): string {
   return path.join(stateDir(), "credentials.enc");
 }

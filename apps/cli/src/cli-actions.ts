@@ -38,6 +38,7 @@ import {
   resolveHousehelpOptions,
   slotWatchWindowFromHousehelpInput,
 } from "./househelp";
+import { rememberedUpiApp, rememberUpiApp } from "./payment-preferences";
 import { assertScheduledServiceable } from "./serviceability";
 import {
   createSlotWatch,
@@ -60,6 +61,12 @@ import {
 } from "./storage";
 import type { BookingStatusPreset, Credentials, JsonObject } from "./types";
 import { TranquiloError } from "./types";
+import {
+  allowedUpiAppText,
+  parseUpiApp,
+  UPI_APPS,
+  type UpiApp,
+} from "./upi-apps";
 
 const SLOT_TIME_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/;
@@ -383,6 +390,45 @@ function formatAmount(value: unknown): string {
     maximumFractionDigits: 2,
     minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
   })}`;
+}
+
+async function resolvePaymentUpiApp(options: {
+  json?: boolean | undefined;
+  noInteractive?: boolean | undefined;
+  upiApp?: string | undefined;
+}): Promise<UpiApp> {
+  if (options.upiApp) {
+    const app = parseUpiApp(options.upiApp);
+    await rememberUpiApp(app);
+    return app;
+  }
+  const remembered = await rememberedUpiApp();
+  if (remembered) {
+    return remembered;
+  }
+  if (
+    options.json ||
+    options.noInteractive ||
+    !(process.stdin.isTTY && process.stdout.isTTY)
+  ) {
+    throw new TranquiloError(
+      `Choose a UPI app before starting payment. Pass --upi-app ${allowedUpiAppText()}.`,
+      {
+        code: "UPI_APP_REQUIRED",
+        details: { allowed: UPI_APPS.map((app) => app.id) },
+      }
+    );
+  }
+  const id = await select({
+    choices: UPI_APPS.map((app) => ({
+      name: app.label,
+      value: app.id,
+    })),
+    message: "UPI app for payment",
+  });
+  const app = parseUpiApp(id);
+  await rememberUpiApp(app);
+  return app;
 }
 
 function formatSlot(value: string | undefined): string {
@@ -936,12 +982,14 @@ export async function househelpBookAction(
     handoff?: boolean | undefined;
     intervalMs?: number | undefined;
     json?: boolean | undefined;
+    noInteractive?: boolean | undefined;
     pay?: boolean | undefined;
     rank?: number | undefined;
     qrSize?: TerminalQrSize | undefined;
     saveQr?: string | undefined;
     slot?: string | undefined;
     timeoutMs?: number | undefined;
+    upiApp?: string | undefined;
   }
 ): Promise<string> {
   const resolved = await resolveHousehelpSlotInput(options);
@@ -968,9 +1016,11 @@ export async function househelpBookAction(
             copyLink: options.copyLink,
             intervalMs: options.intervalMs,
             json: true,
+            noInteractive: options.noInteractive,
             qrSize: options.qrSize,
             saveQr: options.saveQr,
             timeoutMs: options.timeoutMs,
+            upiApp: options.upiApp,
           })
         ),
       });
@@ -981,9 +1031,11 @@ export async function househelpBookAction(
     return checkoutPayAction(result.order.orderId, {
       copyLink: options.copyLink,
       intervalMs: options.intervalMs,
+      noInteractive: options.noInteractive,
       qrSize: options.qrSize,
       saveQr: options.saveQr,
       timeoutMs: options.timeoutMs,
+      upiApp: options.upiApp,
     });
   }
   if (options.json) {
@@ -1042,10 +1094,12 @@ export async function househelpWatchBookAction(
     copyLink?: boolean | undefined;
     intervalMs?: number | undefined;
     json?: boolean | undefined;
+    noInteractive?: boolean | undefined;
     pay?: boolean | undefined;
     qrSize?: TerminalQrSize | undefined;
     saveQr?: string | undefined;
     timeoutMs?: number | undefined;
+    upiApp?: string | undefined;
   } = {}
 ): Promise<string> {
   const watch = await getSlotWatch(id);
@@ -1101,9 +1155,11 @@ export async function househelpWatchBookAction(
     return checkoutPayAction(result.order.orderId, {
       copyLink: options.copyLink,
       intervalMs: options.intervalMs,
+      noInteractive: options.noInteractive,
       qrSize: options.qrSize,
       saveQr: options.saveQr,
       timeoutMs: options.timeoutMs,
+      upiApp: options.upiApp,
     });
   }
   if (options.json) {
@@ -1146,24 +1202,34 @@ export async function checkoutPayAction(
     copyLink?: boolean | undefined;
     intervalMs?: number | undefined;
     json?: boolean | undefined;
+    noInteractive?: boolean | undefined;
     openIntent?: boolean | undefined;
     qrSize?: TerminalQrSize | undefined;
     saveQr?: string | undefined;
     timeoutMs?: number | undefined;
+    upiApp?: string | undefined;
     watch?: boolean | undefined;
   } = {}
 ): Promise<string> {
-  const payment = await resolveCheckoutPaymentUri(orderId).catch(
-    (error: unknown) => {
-      if (
-        error instanceof TranquiloError &&
-        error.code === "PAYMENT_RETRY_NOT_ALLOWED"
-      ) {
-        return recreateCheckoutPaymentUri(orderId);
-      }
-      throw error;
+  let upiApp = options.upiApp
+    ? await resolvePaymentUpiApp(options)
+    : await rememberedUpiApp();
+  const payment = await resolveCheckoutPaymentUri(orderId, {
+    upiApp: upiApp?.id,
+  }).catch(async (error: unknown) => {
+    if (error instanceof TranquiloError && error.code === "UPI_APP_REQUIRED") {
+      upiApp = await resolvePaymentUpiApp(options);
+      return resolveCheckoutPaymentUri(orderId, { upiApp: upiApp.id });
     }
-  );
+    if (
+      error instanceof TranquiloError &&
+      error.code === "PAYMENT_RETRY_NOT_ALLOWED"
+    ) {
+      upiApp ??= await resolvePaymentUpiApp(options);
+      return recreateCheckoutPaymentUri(orderId, { upiApp: upiApp.id });
+    }
+    throw error;
+  });
   const savedQrPath = await preparePaymentOutput(payment, options);
 
   if (!options.json) {
@@ -1176,6 +1242,7 @@ export async function checkoutPayAction(
       `Amount: ${formatAmount(payment.order.amount)}`,
       `Slot: ${payment.order.slot}`,
       `Payment: ${payment.source}`,
+      `UPI app: ${payment.upiApp?.label ?? upiApp?.label ?? "-"}`,
       `QR image: ${savedQrPath}`,
       "",
       qr.trimEnd(),
@@ -1223,6 +1290,7 @@ export async function checkoutPayAction(
       savedQr: savedQrPath,
       source: payment.source,
       status,
+      upiApp: payment.upiApp ?? upiApp,
     });
   }
   throw new TranquiloError("Payment output mode was not handled.", {

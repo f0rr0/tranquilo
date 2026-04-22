@@ -89,7 +89,6 @@ export async function clearCredentials(): Promise<void> {
 }
 
 export async function credentialStorageStatus(): Promise<{
-  keyringAvailable: boolean;
   fallbackFileExists: boolean;
 }> {
   let fallbackFileExists = false;
@@ -99,5 +98,5 @@ export async function credentialStorageStatus(): Promise<{
   } catch {
     fallbackFileExists = false;
   }
-  return { keyringAvailable: false, fallbackFileExists };
+  return { fallbackFileExists };
 }

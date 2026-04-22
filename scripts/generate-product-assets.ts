@@ -132,7 +132,6 @@ function existingReleasedAtForVersion(version: string): string | null {
       tag(version),
       "index.mdx"
     ),
-    path.join(root, "packages/docs-content/latest/index.mdx"),
   ];
   for (const candidate of candidates) {
     try {
@@ -159,8 +158,7 @@ function releaseJson(): ReleaseJson {
     process.env.TRANQUILO_RELEASED_AT ??
     existingReleasedAtForVersion(PACKAGE_METADATA.version);
   const channel = releasedAt ? "release" : "local";
-  const docsPath =
-    channel === "release" ? `/docs/versions/${tagName}` : "/docs/latest";
+  const docsPath = `/docs/versions/${tagName}`;
 
   return {
     assets: [
@@ -221,7 +219,7 @@ function metaJson(value: Record<string, boolean | string | string[]>): string {
 }
 
 function docsHref(pathName: string): string {
-  return `/docs/latest/${pathName}`;
+  return `/docs/versions/${tag()}/${pathName}`;
 }
 
 function sh(commandText: string): string {
@@ -366,8 +364,7 @@ function mcpReference(): string {
     description: "Agent-callable MCP tools exposed by tranquilo mcp.",
     icon: "plug",
     title: "MCP tools",
-  })}# MCP tools
-
+  })}
 Agents should prefer MCP tools over shelling out to the CLI. Mutating tools require explicit user intent and structured arguments.
 
 | Tool | Safety | CLI fallback | Description |
@@ -382,8 +379,7 @@ function installPage(metadata: ReleaseJson): string {
       "Install Tranquilo, verify it, and configure local AI integrations.",
     icon: "download",
     title: "Install",
-  })}# Install Tranquilo
-
+  })}
 CLI version: ${code(metadata.version)}
 
 ${sh(metadata.installCommand)}
@@ -393,7 +389,7 @@ ${sh(metadata.installCommand)}
     Paste the installer into a local terminal. It detects macOS, Linux, or bash-on-Windows, verifies checksums, installs the binary, and configures supported local AI integrations when available.
   </Step>
   <Step title="Login">
-    Run ${code("tranquilo login")} in your terminal. OTP entry should happen locally, not inside an AI chat.
+    Run ${code("tranquilo login")} in your terminal, or ask a local agent to log in and provide the phone number and Pronto OTP when prompted.
   </Step>
   <Step title="Verify">
     Run ${code("tranquilo doctor")} and ${code("tranquilo status")} to confirm local setup.
@@ -427,8 +423,7 @@ function indexPage(metadata: ReleaseJson): string {
       "Local CLI and MCP wrapper for Pronto House Help booking flows.",
     icon: "sparkles",
     title: "Tranquilo",
-  })}# Tranquilo
-
+  })}
 Tranquilo is the local CLI and MCP wrapper around Pronto House Help booking flows. It is built for terminal-native users and agents that need to find transient maid / house help slots, prepare bookings, and hand payment back to the user locally.
 
 <Note>
@@ -463,12 +458,11 @@ function authPage(): string {
     description: "Login, credential storage, and local status commands.",
     icon: "key-round",
     title: "Auth",
-  })}# Auth
-
+  })}
 Tranquilo authenticates with Pronto using the phone OTP flow captured from the app. Credentials are stored in an encrypted local file under Tranquilo's state directory, with non-secret config in the local app config directory.
 
 <Warning>
-  Do not paste OTPs into AI chat. If an agent finds you are not logged in, it should tell you to run ${code("tranquilo login")} locally.
+  OTP is allowed only for the Tranquilo login flow. Agents may ask for your phone number and Pronto OTP, then call ${code("auth_login_start")} and ${code("auth_login_verify")}. Never paste access tokens, refresh tokens, UPI details, or payment data into chat.
 </Warning>
 
 ## Local commands
@@ -478,6 +472,18 @@ ${commandRows([["login"], ["logout"], ["status"], ["whoami"], ["doctor"]])}
 ### Login flags
 
 ${flagRows(["login"])}
+
+### Login subcommands
+
+${subcommandRows(["login"])}
+
+### Login start flags
+
+${flagRows(["login", "start"])}
+
+### Login verify flags
+
+${flagRows(["login", "verify"])}
 
 ### Status flags
 
@@ -497,8 +503,7 @@ function househelpIndexPage(): string {
       "End-to-end flow for finding and booking Pronto House Help slots.",
     icon: "calendar-search",
     title: "Book House Help",
-  })}# Book House Help
-
+  })}
 House Help is the primary Tranquilo workflow. The CLI discovers the durations and listing IDs currently exposed by the backend, ranks live slots, then creates checkout only after a specific slot and duration are selected.
 
 <Steps>
@@ -531,8 +536,7 @@ function househelpOptionsPage(): string {
     description: "Discover backend-supported House Help durations and prices.",
     icon: "list-checks",
     title: "Options",
-  })}# House Help options
-
+  })}
 Options are not hardcoded. Tranquilo reads the current Pronto listing response for the selected location and uses those listing IDs when searching slots and preparing checkout.
 
 ${sh("tranquilo househelp options\ntranquilo househelp options --address-id 990330 --json --no-interactive")}
@@ -553,8 +557,7 @@ function househelpFindPage(): string {
       "Find live House Help slots with flexible dates, durations, and time windows.",
     icon: "search",
     title: "Find slots",
-  })}# Find slots
-
+  })}
 Slot search is read-only. It does not mutate the cart and does not create checkout.
 
 <Tabs items={["After work", "Exact time", "Fallback durations"]}>
@@ -591,8 +594,7 @@ function househelpBookPage(): string {
     description: "Create checkout, render QR payment, and finalize booking.",
     icon: "badge-check",
     title: "Book",
-  })}# Book
-
+  })}
 Booking is a mutating local-terminal flow. Tranquilo rechecks the selected slot, sets the correct cart item, creates checkout, prints a QR/payment page handoff when available, polls payment, and finalizes the Pronto booking.
 
 ${sh('tranquilo househelp book --duration 60 --slot "tomorrow 6pm" --address-id 990330 --pay --upi-app phonepe')}
@@ -616,8 +618,7 @@ function watchesPage(): string {
     description: "Notify-only slot watches for transient House Help slots.",
     icon: "bell",
     title: "Watches",
-  })}# Watches
-
+  })}
 Watches poll for slots without keeping a resident JavaScript daemon in memory. Tranquilo installs one per-user OS timer and runs short-lived checks.
 
 <Note>
@@ -654,8 +655,7 @@ function managePage(): string {
       "Manage saved addresses, payment handoffs, and Pronto booking history.",
     icon: "settings",
     title: "Manage",
-  })}# Manage
-
+  })}
 Use this section for the Pronto context around House Help booking: saved addresses, checkout payment state, and booking history.
 
 <Cards>
@@ -678,8 +678,7 @@ function addressesPage(): string {
       "Saved addresses and the active delivery/cart address used by bookings.",
     icon: "map-pin",
     title: "Addresses",
-  })}# Addresses
-
+  })}
 Pronto address selection for booking is a cart mutation. ${code("tranquilo addresses use <address-id>")} sets the active delivery/cart address; it does not change a profile-level default.
 
 ${sh("tranquilo addresses list\ntranquilo addresses use 990330\ntranquilo addresses show 990330")}
@@ -713,8 +712,7 @@ function paymentsPage(): string {
     description: "QR-first local payment flow for prepared checkout orders.",
     icon: "qr-code",
     title: "Payments",
-  })}# Payments
-
+  })}
 Payment is user-local. Tranquilo routes direct UPI payment through a user-selected UPI app, renders a QR/link from Juspay, then polls payment status and calls Pronto finalization after a successful charge.
 
 ${sh("tranquilo checkout pay <order-id> --upi-app phonepe")}
@@ -744,8 +742,7 @@ function bookingsPage(): string {
     description: "Inspect upcoming, past, or all Pronto bookings.",
     icon: "calendar-days",
     title: "Bookings",
-  })}# Bookings
-
+  })}
 Use booking history for inspection. Cancellation and rescheduling are intentionally not shipped until their API contracts are captured and validated.
 
 ${sh("tranquilo bookings list --status upcoming\ntranquilo bookings list --status all --page 2 --json --no-interactive")}
@@ -761,15 +758,14 @@ function agentsIndexPage(): string {
     description: "Safe Tranquilo usage from Codex, Claude, and MCP clients.",
     icon: "bot",
     title: "Agents",
-  })}# Agents
-
+  })}
 ${AGENT_CATALOG.productLanguage}
 
 Agents should use MCP first. CLI JSON fallback is available when MCP is unavailable.
 
 <Steps>
   <Step title="Check auth">
-    Call ${code("auth_status")} first. If unauthenticated, tell the user: ${code(AGENT_CATALOG.loginHint)}.
+    Call ${code("auth_status")} first. If unauthenticated, ask for the user's phone number, call ${code("auth_login_start")}, ask for the Pronto OTP, then call ${code("auth_login_verify")}.
   </Step>
   <Step title="Resolve address">
     List addresses and use the active delivery/cart address unless the user asks for another saved address.
@@ -784,7 +780,7 @@ Agents should use MCP first. CLI JSON fallback is available when MCP is unavaila
 
 ## Boundaries
 
-- Do not ask users to paste OTPs or payment details into chat.
+- OTP is allowed only for Tranquilo login after ${code("auth_login_start")}. Do not ask users to paste access tokens, refresh tokens, UPI details, or payment details into chat.
 - Do not call payment app opening flows unless the user explicitly asks from a local terminal.
 - Do not claim there is a Tranquilo mobile app; say Pronto app.
 `;
@@ -795,8 +791,7 @@ function codexPage(): string {
     description: "Install and use the Codex skill plus local MCP server.",
     icon: "code",
     title: "Codex",
-  })}# Codex
-
+  })}
 Install agent support with:
 
 ${sh("tranquilo install-agent codex")}
@@ -811,8 +806,7 @@ function claudePage(): string {
       "Install and use Tranquilo with Claude Code or Claude Desktop.",
     icon: "message-square",
     title: "Claude",
-  })}# Claude
-
+  })}
 Install agent support with:
 
 ${sh("tranquilo install-agent claude-code\ntranquilo install-agent claude-desktop")}
@@ -826,8 +820,7 @@ function mcpPage(): string {
     description: "Run and inspect the local Tranquilo MCP server.",
     icon: "plug",
     title: "MCP",
-  })}# MCP
-
+  })}
 The local MCP server exposes structured tools for agents. It is the preferred AI integration surface because schemas, annotations, and read-only/mutating hints are explicit.
 
 ${sh("tranquilo mcp")}
@@ -839,7 +832,7 @@ See [MCP tools](${docsHref("agents/mcp/tools")}) for the generated tool list.
 function llmsText(metadata: ReleaseJson): string {
   const docsPath = metadata.docsUrl.startsWith(baseUrl)
     ? metadata.docsUrl.slice(baseUrl.length)
-    : "/docs/latest";
+    : `/docs/versions/${tag()}`;
   const page = (pathName: string) => `${docsPath}/${pathName}`;
   const lines = [
     "# Tranquilo",
@@ -886,15 +879,16 @@ async function versionHasDocs(version: string): Promise<boolean> {
 
 async function existingVersionTags(): Promise<string[]> {
   const versionsDir = path.join(root, "packages/docs-content/versions");
-  const allVersions = (
-    await fs.readdir(versionsDir).catch(() => [] as string[])
-  )
-    .filter((entry) => VERSION_DIR_RE.test(entry))
-    .sort(compareVersionTags)
-    .reverse();
+  const allVersions = new Set(
+    (await fs.readdir(versionsDir).catch(() => [] as string[])).filter(
+      (entry) => VERSION_DIR_RE.test(entry)
+    )
+  );
+  allVersions.add(tag());
+  const sortedVersions = [...allVersions].sort(compareVersionTags).reverse();
   const versionTags: string[] = [];
-  for (const version of allVersions) {
-    if (await versionHasDocs(version)) {
+  for (const version of sortedVersions) {
+    if (version === tag() || (await versionHasDocs(version))) {
       versionTags.push(version);
     }
   }
@@ -904,7 +898,7 @@ async function existingVersionTags(): Promise<string[]> {
 function docsRootMeta(): string {
   return metaJson({
     title: "Tranquilo Docs",
-    pages: ["latest", "versions"],
+    pages: ["versions"],
   });
 }
 
@@ -929,7 +923,7 @@ function househelpMeta(): string {
     title: "Book House Help",
     icon: "calendar-search",
     defaultOpen: true,
-    pages: ["index", "options", "find", "book", "watches"],
+    pages: ["options", "find", "book", "watches"],
   });
 }
 
@@ -938,7 +932,7 @@ function manageMeta(): string {
     title: "Manage",
     icon: "settings",
     defaultOpen: true,
-    pages: ["index", "addresses", "payments", "bookings"],
+    pages: ["addresses", "payments", "bookings"],
   });
 }
 
@@ -947,7 +941,7 @@ function agentsMeta(): string {
     title: "AI agents",
     icon: "bot",
     defaultOpen: true,
-    pages: ["index", "codex", "claude", "mcp"],
+    pages: ["codex", "claude", "mcp"],
   });
 }
 
@@ -956,7 +950,7 @@ function mcpMeta(): string {
     title: "MCP",
     icon: "plug",
     defaultOpen: true,
-    pages: ["index", "tools"],
+    pages: ["tools"],
   });
 }
 
@@ -996,6 +990,7 @@ async function existingVersionMetaFiles(): Promise<GeneratedFile[]> {
 
 async function generatedFiles(): Promise<GeneratedFile[]> {
   const metadata = releaseJson();
+  const currentDocsDir = `packages/docs-content/versions/${tag()}`;
   const skill = await fs
     .readFile(path.join(root, "apps/cli/assets/codex-skill/SKILL.md"), "utf8")
     .catch(() => "");
@@ -1014,91 +1009,91 @@ async function generatedFiles(): Promise<GeneratedFile[]> {
       content: docsRootMeta(),
     },
     {
-      path: "packages/docs-content/latest/meta.json",
-      content: versionRootMeta("Latest"),
+      path: `${currentDocsDir}/meta.json`,
+      content: versionRootMeta(tag()),
     },
     {
-      path: "packages/docs-content/latest/index.mdx",
+      path: `${currentDocsDir}/index.mdx`,
       content: indexPage(metadata),
     },
     {
-      path: "packages/docs-content/latest/install.mdx",
+      path: `${currentDocsDir}/install.mdx`,
       content: installPage(metadata),
     },
     {
-      path: "packages/docs-content/latest/auth.mdx",
+      path: `${currentDocsDir}/auth.mdx`,
       content: authPage(),
     },
     {
-      path: "packages/docs-content/latest/househelp/index.mdx",
+      path: `${currentDocsDir}/househelp/index.mdx`,
       content: househelpIndexPage(),
     },
     {
-      path: "packages/docs-content/latest/househelp/meta.json",
+      path: `${currentDocsDir}/househelp/meta.json`,
       content: househelpMeta(),
     },
     {
-      path: "packages/docs-content/latest/househelp/options.mdx",
+      path: `${currentDocsDir}/househelp/options.mdx`,
       content: househelpOptionsPage(),
     },
     {
-      path: "packages/docs-content/latest/househelp/find.mdx",
+      path: `${currentDocsDir}/househelp/find.mdx`,
       content: househelpFindPage(),
     },
     {
-      path: "packages/docs-content/latest/househelp/book.mdx",
+      path: `${currentDocsDir}/househelp/book.mdx`,
       content: househelpBookPage(),
     },
     {
-      path: "packages/docs-content/latest/househelp/watches.mdx",
+      path: `${currentDocsDir}/househelp/watches.mdx`,
       content: watchesPage(),
     },
     {
-      path: "packages/docs-content/latest/manage/index.mdx",
+      path: `${currentDocsDir}/manage/index.mdx`,
       content: managePage(),
     },
     {
-      path: "packages/docs-content/latest/manage/meta.json",
+      path: `${currentDocsDir}/manage/meta.json`,
       content: manageMeta(),
     },
     {
-      path: "packages/docs-content/latest/manage/addresses.mdx",
+      path: `${currentDocsDir}/manage/addresses.mdx`,
       content: addressesPage(),
     },
     {
-      path: "packages/docs-content/latest/manage/payments.mdx",
+      path: `${currentDocsDir}/manage/payments.mdx`,
       content: paymentsPage(),
     },
     {
-      path: "packages/docs-content/latest/manage/bookings.mdx",
+      path: `${currentDocsDir}/manage/bookings.mdx`,
       content: bookingsPage(),
     },
     {
-      path: "packages/docs-content/latest/agents/index.mdx",
+      path: `${currentDocsDir}/agents/index.mdx`,
       content: agentsIndexPage(),
     },
     {
-      path: "packages/docs-content/latest/agents/meta.json",
+      path: `${currentDocsDir}/agents/meta.json`,
       content: agentsMeta(),
     },
     {
-      path: "packages/docs-content/latest/agents/codex.mdx",
+      path: `${currentDocsDir}/agents/codex.mdx`,
       content: codexPage(),
     },
     {
-      path: "packages/docs-content/latest/agents/claude.mdx",
+      path: `${currentDocsDir}/agents/claude.mdx`,
       content: claudePage(),
     },
     {
-      path: "packages/docs-content/latest/agents/mcp/index.mdx",
+      path: `${currentDocsDir}/agents/mcp/index.mdx`,
       content: mcpPage(),
     },
     {
-      path: "packages/docs-content/latest/agents/mcp/meta.json",
+      path: `${currentDocsDir}/agents/mcp/meta.json`,
       content: mcpMeta(),
     },
     {
-      path: "packages/docs-content/latest/agents/mcp/tools.mdx",
+      path: `${currentDocsDir}/agents/mcp/tools.mdx`,
       content: mcpReference(),
     },
     {

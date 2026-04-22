@@ -63,9 +63,12 @@ export async function createClient(
   const config = await loadConfig();
   const credentials = await loadCredentials();
   if (requireAuth && !credentials?.accessToken) {
-    throw new TranquiloError("Not logged in. Run `tranquilo login` first.", {
-      code: "NOT_AUTHENTICATED",
-    });
+    throw new TranquiloError(
+      "Not logged in. Run `tranquilo login`, or use auth_login_start/auth_login_verify from MCP first.",
+      {
+        code: "NOT_AUTHENTICATED",
+      }
+    );
   }
   return new TranquiloClient(config, credentials);
 }

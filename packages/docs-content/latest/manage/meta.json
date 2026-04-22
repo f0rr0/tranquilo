@@ -1,6 +1,0 @@
-{
-  "title": "Manage",
-  "icon": "settings",
-  "defaultOpen": true,
-  "pages": ["index", "addresses", "payments", "bookings"]
-}

@@ -5,6 +5,8 @@ import {
   type AddressUseInput,
   AGENT_CATALOG,
   AgentPromptSchemas,
+  type AuthLoginStartInput,
+  type AuthLoginVerifyInput,
   type BookingsListInput,
   type HousehelpFindInput,
   type HousehelpOptionsInput,
@@ -17,7 +19,9 @@ import {
 } from "@tranquilo/cli-model/agent-catalog";
 import { PACKAGE_METADATA } from "@tranquilo/cli-model/release-metadata";
 import { activeAddressIdFromCart, normalizeAddresses } from "./address";
-import { loadConfig } from "./config";
+import { TranquiloClient } from "./api";
+import { saveVerifiedLogin, tokenFromLoginStart } from "./auth";
+import { ensureConfig, loadConfig } from "./config";
 import { createClient, errorToJson, resolveLocation } from "./context";
 import {
   findHousehelpSlots,
@@ -26,6 +30,11 @@ import {
   resolveHousehelpOptions,
   slotWatchWindowFromHousehelpInput,
 } from "./househelp";
+import {
+  createLoginSession,
+  deleteLoginSession,
+  getLoginSession,
+} from "./login-session";
 import { assertScheduledServiceable } from "./serviceability";
 import {
   createSlotWatch,
@@ -38,6 +47,7 @@ import {
 } from "./slot-watch";
 import { loadCredentials } from "./storage";
 import type { BookingStatusPreset, JsonObject } from "./types";
+import { TranquiloError } from "./types";
 
 function dataOf(payload: JsonObject): unknown {
   return payload.data ?? payload;
@@ -112,6 +122,60 @@ export function createMcpServer(): McpServer {
           : AGENT_CATALOG.loginHint,
       };
     })
+  );
+
+  server.registerTool(
+    "auth_login_start",
+    toolConfig("auth_login_start"),
+    async (args: AuthLoginStartInput) =>
+      runTool(async () => {
+        const mobileNumber = args.mobileNumber.trim();
+        if (!mobileNumber) {
+          throw new TranquiloError("Phone number is required.", {
+            code: "LOGIN_INPUT_REQUIRED",
+          });
+        }
+        const client = new TranquiloClient(await ensureConfig(), null);
+        const token = tokenFromLoginStart(
+          await client.loginStart(mobileNumber)
+        );
+        const session = await createLoginSession({
+          token,
+          mobileNumber,
+        });
+        return {
+          ...session,
+          nextAction:
+            "Ask the user for the Pronto OTP they received, then call auth_login_verify with loginSessionId and otp.",
+        };
+      }, "OTP sent by Pronto.")
+  );
+
+  server.registerTool(
+    "auth_login_verify",
+    toolConfig("auth_login_verify"),
+    async (args: AuthLoginVerifyInput) =>
+      runTool(async () => {
+        const session = await getLoginSession(args.loginSessionId);
+        const client = new TranquiloClient(await ensureConfig(), null);
+        const verified = await client.verifyLogin({
+          token: session.token,
+          idtoken: args.otp.trim(),
+          mobileNumber: session.mobileNumber,
+        });
+        await deleteLoginSession(args.loginSessionId);
+        const { credentials, storage } = await saveVerifiedLogin(
+          verified,
+          session.mobileNumber
+        );
+        return {
+          authenticated: true,
+          mobileNumber: credentials.mobileNumber,
+          savedAt: credentials.savedAt,
+          storage,
+          userId: credentials.userId,
+        };
+      }, "Logged in to Pronto.")
   );
 
   server.registerTool(
@@ -321,7 +385,7 @@ export function createMcpServer(): McpServer {
               "This prompt handles user requests like 'find a maid tomorrow', 'book house help after work', 'need a cleaner this weekend', or 'get me a 60 minute maid slot'.",
               "Also handle terse requests like 'scan for slots', 'keep looking for 1 hour slots', or 'book any you find after 6pm': 1 hour means duration 60 unless the user says for the next hour, upcoming days means next-4-days, after 6pm means timeWindow 18:00-22:00, and any/first means earliest ranked acceptable match.",
               "Tranquilo is the local CLI/MCP wrapper around Pronto; when mentioning the mobile app or pending bookings to the user, say Pronto app, never Tranquilo app.",
-              "First call auth_status. If unauthenticated, tell the user the loginHint and stop.",
+              "First call auth_status. If unauthenticated, ask for the user's phone number, call auth_login_start, ask for the Pronto OTP, then call auth_login_verify before continuing.",
               args.naturalRequest
                 ? `User request: ${args.naturalRequest}.`
                 : "",
@@ -379,7 +443,7 @@ export function createMcpServer(): McpServer {
           content: {
             type: "text",
             text: [
-              "First call auth_status. If unauthenticated, tell the user the loginHint and stop.",
+              "First call auth_status. If unauthenticated, ask for the user's phone number, call auth_login_start, ask for the Pronto OTP, then call auth_login_verify before continuing.",
               "Use househelp_watch_create to watch for after-work House Help slots this week.",
               "Watches are notify-only. If a slot is found later, tell the user to run or ask for the watch booking flow locally.",
               "Use preset next-4-days and window after-work.",
@@ -431,7 +495,7 @@ export function createMcpServer(): McpServer {
           content: {
             type: "text",
             text: [
-              "First call auth_status. If unauthenticated, tell the user the loginHint and stop.",
+              "First call auth_status. If unauthenticated, ask for the user's phone number, call auth_login_start, ask for the Pronto OTP, then call auth_login_verify before continuing.",
               "Tranquilo is the local CLI/MCP wrapper around Pronto. If the user needs to inspect the mobile app, call it the Pronto app, never the Tranquilo app.",
               "Use househelp_prepare_booking for this House Help slot only in hosted/web handoff flows.",
               `Duration: ${args.duration}.`,

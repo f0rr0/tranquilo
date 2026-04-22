@@ -2,7 +2,6 @@ import { execa } from "execa";
 
 const DOC_PATHS = [
   "packages/docs-content/meta.json",
-  "packages/docs-content/latest",
   "packages/docs-content/versions",
   "packages/docs-content/llms.txt",
   "packages/docs-content/skill.md",

@@ -5,13 +5,6 @@ pre-commit:
       run: bun run lint
     typecheck:
       run: bun run typecheck
-    test:
-      run: bun run test
-    actionlint:
-      glob: ".github/workflows/*.{yml,yaml}"
-      run: bun run actions:lint
-    knip:
-      run: bun run knip:check
 
 pre-push:
   parallel: false

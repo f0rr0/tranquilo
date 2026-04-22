@@ -76,3 +76,7 @@ export function paymentPreferencesPath(): string {
 export function fallbackSecretPath(): string {
   return path.join(stateDir(), "credentials.enc");
 }
+
+export function loginSessionsPath(): string {
+  return path.join(stateDir(), "login-sessions.json");
+}

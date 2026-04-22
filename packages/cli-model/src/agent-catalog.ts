@@ -3,7 +3,8 @@ import { z } from "zod/v4";
 const PRODUCT_LANGUAGE =
   "Tranquilo is the local CLI/MCP wrapper around Pronto. There is no user-facing Tranquilo app; say Pronto app when referring to the mobile app.";
 
-const LOGIN_HINT = "Run `tranquilo login` in a local terminal, then retry.";
+const LOGIN_HINT =
+  "Ask for the user's phone number, call auth_login_start, ask for the Pronto OTP, then call auth_login_verify. CLI fallback: tranquilo login start --phone <phone> --json --no-interactive, then tranquilo login verify --session <loginSessionId> --otp <otp> --json --no-interactive.";
 
 const VALID_BOOKING_HORIZON =
   "House Help bookings are only valid for today, tomorrow, and the next two days.";
@@ -65,6 +66,23 @@ const AgentInputSchemas = {
   addressesList: z.object({
     includeActive: z.boolean().default(true),
   }),
+  authLoginStart: z.object({
+    mobileNumber: z
+      .string()
+      .min(5)
+      .describe("Phone number that should receive the Pronto OTP."),
+  }),
+  authLoginVerify: z.object({
+    loginSessionId: z
+      .string()
+      .min(1)
+      .describe("Opaque login session id returned by auth_login_start."),
+    otp: z
+      .string()
+      .min(4)
+      .max(12)
+      .describe("OTP code the user received from Pronto."),
+  }),
   authStatus: z.object({}),
   bookingsList: z.object({
     status: z.enum(["upcoming", "past", "all"]).default("upcoming"),
@@ -96,6 +114,12 @@ export type AddressShowInput = z.infer<typeof AgentInputSchemas.addressShow>;
 export type AddressUseInput = z.infer<typeof AgentInputSchemas.addressUse>;
 export type AddressesListInput = z.infer<
   typeof AgentInputSchemas.addressesList
+>;
+export type AuthLoginStartInput = z.infer<
+  typeof AgentInputSchemas.authLoginStart
+>;
+export type AuthLoginVerifyInput = z.infer<
+  typeof AgentInputSchemas.authLoginVerify
 >;
 export type BookingsListInput = z.infer<typeof AgentInputSchemas.bookingsList>;
 export type HousehelpFindInput = z.infer<
@@ -163,10 +187,40 @@ export const MCP_TOOLS = [
     name: "auth_status",
     title: "Auth status",
     description:
-      "First tool to call for any Tranquilo, maid, house help, cleaner, slot, address, or booking request. If unauthenticated, return the loginHint and stop.",
+      "First tool to call for any Tranquilo, maid, house help, cleaner, slot, address, or booking request. If unauthenticated, use the loginHint and the auth_login_start/auth_login_verify flow before continuing.",
     manifestDescription: "Check local Tranquilo login status.",
     schema: AgentInputSchemas.authStatus,
     annotations: { readOnlyHint: true, openWorldHint: false },
+  },
+  {
+    name: "auth_login_start",
+    title: "Start phone OTP login",
+    description:
+      "Agent-safe login step 1: ask the user for their phone number, send the Pronto OTP, and return a short-lived loginSessionId. Do not ask for access tokens, refresh tokens, or payment details.",
+    manifestDescription: "Start Pronto phone OTP login.",
+    cliFallback:
+      "tranquilo login start --phone <phone> --json --no-interactive",
+    schema: AgentInputSchemas.authLoginStart,
+    annotations: {
+      readOnlyHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
+  {
+    name: "auth_login_verify",
+    title: "Verify phone OTP login",
+    description:
+      "Agent-safe login step 2: ask the user for the Pronto OTP after auth_login_start, verify it, and store credentials locally. OTP is allowed only for this login tool; never ask for access tokens, refresh tokens, UPI details, or payment data.",
+    manifestDescription: "Verify Pronto OTP and store local credentials.",
+    cliFallback:
+      "tranquilo login verify --session <loginSessionId> --otp <otp> --json --no-interactive",
+    schema: AgentInputSchemas.authLoginVerify,
+    annotations: {
+      readOnlyHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
   },
   {
     name: "addresses_list",
@@ -418,7 +472,8 @@ const HUMAN_ONLY_CLI_COMMANDS = [
   {
     agentSafe: false,
     command: "tranquilo login",
-    reason: "OTP entry belongs in the user's terminal, not in chat.",
+    reason:
+      "Interactive login prompts belong in the user's terminal. Agents should use auth_login_start/auth_login_verify, or the non-interactive JSON CLI fallback with login start and login verify.",
   },
   {
     agentSafe: false,

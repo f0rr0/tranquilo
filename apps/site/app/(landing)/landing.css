@@ -7,11 +7,6 @@
   --font-landing-script: var(--font-script), cursive;
 }
 
-.tranquilo-landing,
-.tranquilo-landing * {
-  cursor: crosshair;
-}
-
 .tranquilo-landing {
   --font-landing-mono: var(--font-mono), monospace;
   --font-landing-pronto: var(--font-pronto), sans-serif;

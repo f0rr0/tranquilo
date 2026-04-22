@@ -49,14 +49,14 @@ Use the installed \`tranquilo\` MCP server first for auth, address, options, and
 - Natural user phrases like "find a maid tomorrow", "book house help after work", "scan for slots", "keep looking for 1 hour slots", "need cleaning help this weekend", or "get me a 60 min maid slot" mean the House Help booking flow.
 - Interpret terse booking language aggressively: "1 hour" means 60-minute House Help duration unless the user says "for the next hour"; "upcoming days" or "next few days" means \`preset=next-4-days\`; "after 6pm" means \`--time-window 18:00-22:00\`; "any you find" means the earliest ranked acceptable slot.
 - Product language: ${productLanguage}
-- For any Tranquilo request, call \`auth_status\` first. If credentials are missing, stop and tell the user exactly: \`Run tranquilo login in a local terminal, then retry.\` Do not continue to address/slot tools until authenticated.
-- Never ask users to paste OTPs, access tokens, refresh tokens, UPI details, or payment data into chat.
+- For any Tranquilo request, call \`auth_status\` first. If credentials are missing, ask for the user's phone number, call \`auth_login_start\`, ask for the Pronto OTP, then call \`auth_login_verify\`. Do not continue to address/slot tools until authenticated.
+- OTP is allowed only for the Tranquilo login flow after \`auth_login_start\`. Never ask users to paste access tokens, refresh tokens, UPI details, or payment data into chat.
 - Treat user phrases like "book it", "book this", "yes book", or "book the 60 min one" as approval to create checkout and show the local QR payment flow for the selected slot. Do not ask a second "pay now?" question in local terminal agents.
 - Before running a local QR payment flow, ask which UPI app to use if the user has not already said and no local preference exists. Allowed values are \`phonepe\`, \`googlepay\`, and \`paytm\`. Pass that value as \`--upi-app\`; the CLI remembers it for later payments.
 - Treat "book any you find" or "book the first one" as approval to book the earliest matching slot only if it is available in the current interactive session. If no slot is available now and a background watch is needed, create a notify-only watch. When a notification arrives later, inspect the watch and book it locally after the user confirms.
 - Treat follow-up corrections as authoritative. If the user says "check any day for 30 mins" after a 60-minute search, discard the old duration/date filters and run a fresh 30-minute search.
 - Only run QR/payment polling commands in a local terminal agent after the user has selected or confirmed the exact slot/duration/address.
-- Do not call OTP login, terminal confirmation, or OS-open flows from the agent session.
+- Do not call interactive terminal confirmation or OS-open flows from the agent session.
 - Treat \`address_use\` as selecting the active delivery/cart address, not a profile-level default.
 - Use House Help tools for the booking journey; generic cart, slot, and service-catalog tools are not exposed.
 - Payment can be either a handoff or a full local terminal flow. Local terminal agents should use the full QR flow after booking approval; hosted/web chat agents should use handoff only.
@@ -86,7 +86,7 @@ Do not use \`tranquilo checkout pay <orderId>\` as the normal local booking path
 ## Booking Flow
 
 1. Interpret "maid", "cleaner", "house help", "domestic help", and "hourly cleaning" as Tranquilo House Help.
-2. Check \`auth_status\`; if unauthenticated, stop and give the local login command.
+2. Check \`auth_status\`; if unauthenticated, complete the agent login flow with \`auth_login_start\` and \`auth_login_verify\` before continuing.
 3. Use \`addresses_list\` and prefer the active delivery/cart address. Ask only if there are multiple plausible addresses and the user did not imply one.
 4. Use \`househelp_options\` to discover backend-supported durations and prices. Do not hardcode duration ids.
 5. Convert normal date/time language into filters: "tomorrow" -> \`preset=tomorrow\`; "after work/evening" -> \`window=after-work\`; "before work/morning" -> \`window=before-work\`; "weekend" -> \`preset=weekend\` only if it falls inside the valid booking horizon; if duration is absent, show available options or use the best default only after user confirmation.
@@ -154,7 +154,7 @@ function openAiYaml(): string {
   return [
     "display_name: Tranquilo",
     "short_description: Find and book maid / House Help slots through Tranquilo from natural requests.",
-    "default_prompt: Use Tranquilo when the user asks for a maid, cleaner, house help, domestic help, hourly cleaning, or Tranquilo booking. Check auth first; if unauthenticated, give the local login command and stop.",
+    "default_prompt: Use Tranquilo when the user asks for a maid, cleaner, house help, domestic help, hourly cleaning, or Tranquilo booking. Check auth first; if unauthenticated, ask for phone, call auth_login_start, ask for OTP, then call auth_login_verify.",
     "",
   ].join("\n");
 }
@@ -208,7 +208,7 @@ function generatedFiles(): GeneratedFile[] {
       content: claudeCommand(
         "Find maid / House Help slots",
         "[duration]",
-        'Use the Tranquilo MCP server when the user asks for a maid, cleaner, house help, domestic help, hourly cleaning, scanning for slots, or keeping watch for slots. First call `auth_status`; if unauthenticated, tell the user the `loginHint` and stop. If `$ARGUMENTS` is provided, use it as the preferred duration. Prefer `househelp_options` and `househelp_find_slots`, and prefer the user\'s active cart delivery address unless they specify another saved address. Map natural time language: tomorrow -> `preset=tomorrow`, upcoming days/next few days -> `preset=next-4-days`, after work/evening -> `window=after-work`, after 6pm -> `timeWindow=["18:00-22:00"]`, before work/morning -> `window=before-work`, weekend -> `preset=weekend` only if it is within today plus 3 days. Interpret "1 hour slots" as 60-minute House Help unless the user says "for the next hour". Never offer dates outside today, tomorrow, and the next two days. For watch requests, create notify-only watches; watches must not create checkout automatically. When a watch later finds a slot, inspect it and ask before booking the found watch locally.'
+        'Use the Tranquilo MCP server when the user asks for a maid, cleaner, house help, domestic help, hourly cleaning, scanning for slots, or keeping watch for slots. First call `auth_status`; if unauthenticated, ask for phone, call `auth_login_start`, ask for OTP, then call `auth_login_verify`. If `$ARGUMENTS` is provided, use it as the preferred duration. Prefer `househelp_options` and `househelp_find_slots`, and prefer the user\'s active cart delivery address unless they specify another saved address. Map natural time language: tomorrow -> `preset=tomorrow`, upcoming days/next few days -> `preset=next-4-days`, after work/evening -> `window=after-work`, after 6pm -> `timeWindow=["18:00-22:00"]`, before work/morning -> `window=before-work`, weekend -> `preset=weekend` only if it is within today plus 3 days. Interpret "1 hour slots" as 60-minute House Help unless the user says "for the next hour". Never offer dates outside today, tomorrow, and the next two days. For watch requests, create notify-only watches; watches must not create checkout automatically. When a watch later finds a slot, inspect it and ask before booking the found watch locally.'
       ),
     },
     {

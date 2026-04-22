@@ -73,9 +73,11 @@ describe("agent-facing docs", () => {
     expect(skill).toContain("duration 60");
     expect(skill).toContain("notify-only watch");
     expect(skill).toContain("call `auth_status` first");
+    expect(skill).toContain("auth_login_start");
+    expect(skill).toContain("auth_login_verify");
+    expect(skill).toContain("OTP is allowed only for the Tranquilo login flow");
     expect(skill).toContain("There is no user-facing Tranquilo app");
     expect(skill).toContain("say Pronto app");
-    expect(skill).toContain("Run tranquilo login in a local terminal");
     expect(skill).toContain("Watches must not prepare checkout automatically");
     expect(skill).not.toMatch(LOCAL_BUN_CHECKOUT_COMMAND_RE);
     expect(skill).not.toContain("--open-intent");
@@ -105,6 +107,8 @@ describe("agent-facing docs", () => {
     expect(text).toContain("househelp_payment_handoff");
     expect(text).toContain("maid");
     expect(text).toContain("auth_status");
+    expect(text).toContain("auth_login_start");
+    expect(text).toContain("auth_login_verify");
     expect(text).not.toContain("--open-intent");
   });
 
@@ -117,6 +121,8 @@ describe("agent-facing docs", () => {
     };
     const tools = manifest.tools.map((tool) => tool.name);
 
+    expect(tools).toContain("auth_login_start");
+    expect(tools).toContain("auth_login_verify");
     expect(tools).toContain("househelp_options");
     expect(tools).toContain("househelp_find_slots");
     expect(tools).toContain("househelp_prepare_booking");
@@ -170,33 +176,25 @@ describe("agent-facing docs", () => {
   });
 
   it("keeps generated public docs grounded in current CLI/MCP surfaces", () => {
-    const find = readRepoFile(
-      "../../packages/docs-content/latest/househelp/find.mdx"
-    );
-    const book = readRepoFile(
-      "../../packages/docs-content/latest/househelp/book.mdx"
-    );
-    const watches = readRepoFile(
-      "../../packages/docs-content/latest/househelp/watches.mdx"
-    );
-    const manage = readRepoFile(
-      "../../packages/docs-content/latest/manage/index.mdx"
-    );
-    const auth = readRepoFile("../../packages/docs-content/latest/auth.mdx");
-    const addresses = readRepoFile(
-      "../../packages/docs-content/latest/manage/addresses.mdx"
-    );
-    const payments = readRepoFile(
-      "../../packages/docs-content/latest/manage/payments.mdx"
-    );
-    const bookings = readRepoFile(
-      "../../packages/docs-content/latest/manage/bookings.mdx"
-    );
-    const mcpTools = readRepoFile(
-      "../../packages/docs-content/latest/agents/mcp/tools.mdx"
-    );
-    const latestMeta = JSON.parse(
-      readRepoFile("../../packages/docs-content/latest/meta.json")
+    const currentVersion = `v${PACKAGE_METADATA.version}`;
+    const currentDocsDir = `../../packages/docs-content/versions/${currentVersion}`;
+    const find = readRepoFile(`${currentDocsDir}/househelp/find.mdx`);
+    const book = readRepoFile(`${currentDocsDir}/househelp/book.mdx`);
+    const watches = readRepoFile(`${currentDocsDir}/househelp/watches.mdx`);
+    const manage = readRepoFile(`${currentDocsDir}/manage/index.mdx`);
+    const auth = readRepoFile(`${currentDocsDir}/auth.mdx`);
+    const addresses = readRepoFile(`${currentDocsDir}/manage/addresses.mdx`);
+    const payments = readRepoFile(`${currentDocsDir}/manage/payments.mdx`);
+    const bookings = readRepoFile(`${currentDocsDir}/manage/bookings.mdx`);
+    const mcpTools = readRepoFile(`${currentDocsDir}/agents/mcp/tools.mdx`);
+    const docsRootMeta = JSON.parse(
+      readRepoFile("../../packages/docs-content/meta.json")
+    ) as {
+      pages: string[];
+      title?: string;
+    };
+    const currentVersionMeta = JSON.parse(
+      readRepoFile(`${currentDocsDir}/meta.json`)
     ) as {
       pages: string[];
       root?: boolean;
@@ -208,26 +206,26 @@ describe("agent-facing docs", () => {
       pages: string[];
     };
     const manageMeta = JSON.parse(
-      readRepoFile("../../packages/docs-content/latest/manage/meta.json")
+      readRepoFile(`${currentDocsDir}/manage/meta.json`)
     ) as {
       defaultOpen?: boolean;
       pages: string[];
       title?: string;
     };
     const mcpMeta = JSON.parse(
-      readRepoFile("../../packages/docs-content/latest/agents/mcp/meta.json")
+      readRepoFile(`${currentDocsDir}/agents/mcp/meta.json`)
     ) as {
       defaultOpen?: boolean;
       pages: string[];
       title?: string;
     };
-    const currentVersion = `v${PACKAGE_METADATA.version}`;
 
-    expect(latestMeta).toMatchObject({
+    expect(docsRootMeta.pages).toEqual(["versions"]);
+    expect(currentVersionMeta).toMatchObject({
       root: true,
-      title: "Latest",
+      title: currentVersion,
     });
-    expect(latestMeta.pages).toEqual([
+    expect(currentVersionMeta.pages).toEqual([
       "index",
       "install",
       "auth",
@@ -259,17 +257,12 @@ describe("agent-facing docs", () => {
       defaultOpen: true,
       title: "Manage",
     });
-    expect(manageMeta.pages).toEqual([
-      "index",
-      "addresses",
-      "payments",
-      "bookings",
-    ]);
+    expect(manageMeta.pages).toEqual(["addresses", "payments", "bookings"]);
     expect(mcpMeta).toMatchObject({
       defaultOpen: true,
       title: "MCP",
     });
-    expect(mcpMeta.pages).toEqual(["index", "tools"]);
+    expect(mcpMeta.pages).toEqual(["tools"]);
     expect(auth).toContain("### Login flags");
     expect(auth).toContain("--no-interactive");
     expect(addresses).toContain("tranquilo addresses use");
@@ -287,8 +280,9 @@ describe("agent-facing docs", () => {
   });
 
   it("renders angle-bracket placeholders as code, not HTML entities", () => {
+    const currentVersion = `v${PACKAGE_METADATA.version}`;
+    const currentDocsDir = `../../packages/docs-content/versions/${currentVersion}`;
     const generatedDocs = [
-      ...readRepoTextFiles("../../packages/docs-content/latest"),
       ...readRepoTextFiles("../../packages/docs-content/versions"),
       {
         content: readRepoFile("../../packages/docs-content/skill.md"),
@@ -306,12 +300,10 @@ describe("agent-facing docs", () => {
       }
     }
 
-    expect(
-      readRepoFile("../../packages/docs-content/latest/manage/addresses.mdx")
-    ).toContain("`tranquilo addresses use <address-id>`");
-    expect(
-      readRepoFile("../../packages/docs-content/latest/agents/mcp/tools.mdx")
-    ).toContain(
+    expect(readRepoFile(`${currentDocsDir}/manage/addresses.mdx`)).toContain(
+      "`tranquilo addresses use <address-id>`"
+    );
+    expect(readRepoFile(`${currentDocsDir}/agents/mcp/tools.mdx`)).toContain(
       "`tranquilo househelp payment-handoff <orderId> --json --no-interactive`"
     );
     expect(readRepoFile("../../packages/docs-content/skill.md")).toContain(

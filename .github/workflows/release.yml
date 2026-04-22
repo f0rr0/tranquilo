@@ -26,6 +26,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ssh-key: ${{ secrets.TRANQUILO_RELEASE_DEPLOY_KEY }}
       - name: Require main branch
         run: |
           if [ "${GITHUB_REF_NAME}" != "main" ]; then

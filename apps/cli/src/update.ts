@@ -149,6 +149,9 @@ export async function updateCheckAction(options: {
 
 export async function updateAction(): Promise<string> {
   const update = await checkForUpdate({ force: true });
+  if (update && !update.updateAvailable) {
+    return `Tranquilo ${PACKAGE_METADATA.version} is up to date.\n`;
+  }
   const command =
     update?.installCommand ??
     `curl -fsSL ${PACKAGE_METADATA.publicBaseUrl}/install.sh | sh`;

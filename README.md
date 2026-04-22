@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/f0rr0/tranquilo?style=flat-square&label=release&color=00b564)](https://github.com/f0rr0/tranquilo/releases)
 [![CI](https://img.shields.io/github/actions/workflow/status/f0rr0/tranquilo/ci.yml?branch=main&style=flat-square&label=ci&color=00b564)](https://github.com/f0rr0/tranquilo/actions/workflows/ci.yml)
-[![Docs](https://img.shields.io/badge/docs-tranquilo--ai.vercel.app-00b564?style=flat-square)](https://tranquilo-ai.vercel.app/docs/latest)
+[![Docs](https://img.shields.io/badge/docs-tranquilo--ai.vercel.app-00b564?style=flat-square)](https://tranquilo-ai.vercel.app/docs)
 
 Tranquilo is a local command center for Pronto House Help: find maid slots, keep watching for better times, book the slot you want, and finish payment from your terminal with a QR.
 
@@ -28,7 +28,7 @@ Tranquilo is the CLI/MCP wrapper. Pronto is the consumer app and backend.
 
 ## Docs
 
-Start with the [Tranquilo docs](https://tranquilo-ai.vercel.app/docs/latest) for setup, CLI commands, AI-agent usage, watches, payments, and release notes.
+Start with the [Tranquilo docs](https://tranquilo-ai.vercel.app/docs) for setup, CLI commands, AI-agent usage, watches, payments, and release notes.
 
 ## Status
 

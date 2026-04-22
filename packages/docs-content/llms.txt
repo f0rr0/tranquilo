@@ -1,20 +1,20 @@
 # Tranquilo
 
-Latest version: 0.1.1
+Latest version: 0.1.2
 Install: https://tranquilo-ai.vercel.app/install.sh
-Docs: https://tranquilo-ai.vercel.app/docs/versions/v0.1.1
+Docs: https://tranquilo-ai.vercel.app/docs/versions/v0.1.2
 Skill: https://tranquilo-ai.vercel.app/docs/skill.md
 
 ## Pages
 
-- Overview: /docs/versions/v0.1.1
-- Install: /docs/versions/v0.1.1/install
-- Auth: /docs/versions/v0.1.1/auth
-- Book House Help: /docs/versions/v0.1.1/househelp
-- Find slots: /docs/versions/v0.1.1/househelp/find
-- Watches: /docs/versions/v0.1.1/househelp/watches
-- Manage: /docs/versions/v0.1.1/manage
-- Addresses: /docs/versions/v0.1.1/manage/addresses
-- Payments: /docs/versions/v0.1.1/manage/payments
-- Agent usage: /docs/versions/v0.1.1/agents
-- MCP tools: /docs/versions/v0.1.1/agents/mcp/tools
+- Overview: /docs/versions/v0.1.2
+- Install: /docs/versions/v0.1.2/install
+- Auth: /docs/versions/v0.1.2/auth
+- Book House Help: /docs/versions/v0.1.2/househelp
+- Find slots: /docs/versions/v0.1.2/househelp/find
+- Watches: /docs/versions/v0.1.2/househelp/watches
+- Manage: /docs/versions/v0.1.2/manage
+- Addresses: /docs/versions/v0.1.2/manage/addresses
+- Payments: /docs/versions/v0.1.2/manage/payments
+- Agent usage: /docs/versions/v0.1.2/agents
+- MCP tools: /docs/versions/v0.1.2/agents/mcp/tools

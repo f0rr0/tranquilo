@@ -1,0 +1,37 @@
+---
+title: "Book House Help"
+description: "End-to-end flow for finding and booking Pronto House Help slots."
+icon: "calendar-search"
+---
+
+
+House Help is the primary Tranquilo workflow. The CLI discovers the durations and listing IDs currently exposed by the backend, ranks live slots, then creates checkout only after a specific slot and duration are selected.
+
+<Steps>
+  <Step title="Choose a location">
+    Use `tranquilo addresses list` to see saved addresses and `tranquilo addresses use <address-id>` to set the active delivery/cart address.
+  </Step>
+  <Step title="Find available options">
+    Use `tranquilo househelp options` to inspect backend-supported durations and prices for that location.
+  </Step>
+  <Step title="Search slots">
+    Use `tranquilo househelp find` with duration, date, and window preferences. Slots are transient and should be rechecked immediately before checkout.
+  </Step>
+  <Step title="Book and pay">
+    Use `tranquilo househelp book --pay --upi-app phonepe` in a local terminal after confirming the exact slot. The QR flow is local and user-facing, and the selected UPI app is remembered.
+  </Step>
+</Steps>
+
+<Tip>
+  For busy employees, start with `--window after-work` or `--time-window 18:00-22:00`. Use `--duration-order` when a shorter fallback is acceptable.
+</Tip>
+
+## House Help subcommands
+
+| Subcommand | Description |
+| --- | --- |
+| `tranquilo househelp options` | List House Help options |
+| `tranquilo househelp find` | Find ranked House Help slots |
+| `tranquilo househelp book` | Book House Help and show QR payment in local terminals |
+| `tranquilo househelp payment-handoff <order-id>` | Return local payment command for a checkout |
+| `tranquilo househelp watch` | Notify-only House Help slot watches |

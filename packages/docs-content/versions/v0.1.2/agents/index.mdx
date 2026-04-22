@@ -1,0 +1,31 @@
+---
+title: "Agents"
+description: "Safe Tranquilo usage from Codex, Claude, and MCP clients."
+icon: "bot"
+---
+
+
+Tranquilo is the local CLI/MCP wrapper around Pronto. There is no user-facing Tranquilo app; say Pronto app when referring to the mobile app.
+
+Agents should use MCP first. CLI JSON fallback is available when MCP is unavailable.
+
+<Steps>
+  <Step title="Check auth">
+    Call `auth_status` first. If unauthenticated, ask for the user's phone number, call `auth_login_start`, ask for the Pronto OTP, then call `auth_login_verify`.
+  </Step>
+  <Step title="Resolve address">
+    List addresses and use the active delivery/cart address unless the user asks for another saved address.
+  </Step>
+  <Step title="Find slots">
+    Use `househelp_find_slots` for natural requests like "find a maid tomorrow after 6pm".
+  </Step>
+  <Step title="Ask before booking">
+    Confirm duration, slot, and UPI app before creating checkout. Payment QR rendering is local-terminal behavior.
+  </Step>
+</Steps>
+
+## Boundaries
+
+- OTP is allowed only for Tranquilo login after `auth_login_start`. Do not ask users to paste access tokens, refresh tokens, UPI details, or payment details into chat.
+- Do not call payment app opening flows unless the user explicitly asks from a local terminal.
+- Do not claim there is a Tranquilo mobile app; say Pronto app.

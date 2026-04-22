@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@theme {
+  --font-landing-mono: var(--font-mono), monospace;
+  --font-landing-pronto: var(--font-pronto), sans-serif;
+  --font-landing-sans: var(--font-sans), sans-serif;
+  --font-landing-script: var(--font-script), cursive;
+}
+
+.tranquilo-landing,
+.tranquilo-landing * {
+  cursor: crosshair;
+}
+
+.tranquilo-landing {
+  --font-landing-mono: var(--font-mono), monospace;
+  --font-landing-pronto: var(--font-pronto), sans-serif;
+  --font-landing-sans: var(--font-sans), sans-serif;
+  --font-landing-script: var(--font-script), cursive;
+}
+
+.landing-ambient {
+  background:
+    radial-gradient(
+      ellipse 60% 52% at 8% 0%,
+      rgba(227, 210, 185, 0.95),
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 50% 48% at 98% 70%,
+      rgba(198, 162, 130, 0.86),
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 42% 38% at 50% 56%,
+      rgba(219, 191, 158, 0.82),
+      transparent 74%
+    ),
+    radial-gradient(
+      ellipse 28% 24% at 78% 24%,
+      rgba(168, 121, 102, 0.34),
+      transparent 76%
+    ),
+    #f2ead8;
+  mix-blend-mode: multiply;
+  filter: blur(54px);
+  animation: landing-drift 30s infinite alternate ease-in-out;
+}
+
+.landing-noise {
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.25;
+}
+
+.landing-motif-line {
+  height: 1px;
+  margin-bottom: 4px;
+  background: #a87966;
+  transform-origin: right;
+}
+
+.landing-cursor {
+  margin-left: 4px;
+  animation: landing-blink 1s step-end infinite;
+}
+
+@keyframes landing-drift {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate(3vw, 5vh) scale(1.06);
+  }
+
+  100% {
+    transform: translate(-2vw, -3vh) scale(0.98);
+  }
+}
+
+@keyframes landing-blink {
+  50% {
+    opacity: 0;
+  }
+}

@@ -46,7 +46,6 @@
         "@types/node": "catalog:tooling",
         "@types/qrcode": "catalog:tooling",
         "@typescript/native-preview": "catalog:tooling",
-        "fflate": "catalog:cli",
         "tsdown": "catalog:tooling",
         "ultracite": "catalog:tooling",
         "vitest": "catalog:tooling",

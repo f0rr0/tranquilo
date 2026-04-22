@@ -557,7 +557,6 @@ describe("CLI integration against a mocked API", () => {
     await expect(loadCredentials()).resolves.toEqual(credentials);
     await expect(credentialStorageStatus()).resolves.toEqual({
       fallbackFileExists: true,
-      keyringAvailable: false,
     });
   });
 

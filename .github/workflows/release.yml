@@ -94,8 +94,6 @@ jobs:
           echo "TRANQUILO_RELEASED_AT=$released_at" >> "$GITHUB_ENV"
           export TRANQUILO_RELEASED_AT="$released_at"
           bun run generate
-          bun scripts/snapshot-docs-version.ts --force
-          bun run generate
           bun install --lockfile-only
       - if: steps.version.outputs.should_release == 'true'
         run: bun run validate

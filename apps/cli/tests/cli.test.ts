@@ -18,6 +18,8 @@ import {
   househelpOptionsAction,
   househelpWatchCreateAction,
   loginAction,
+  loginStartAction,
+  loginVerifyAction,
 } from "../src/cli-actions";
 import {
   clearCredentials,
@@ -207,6 +209,27 @@ describe("CLI integration against a mocked API", () => {
             latestVersion: "0.1.0",
             releaseNotesUrl: "https://github.com/example/releases/v0.1.0",
             updateAvailable: false,
+          });
+          return;
+        }
+        if (req.method === "POST" && url.pathname === "/gateway/auth/login") {
+          const parsed = JSON.parse(body) as { mobileNumber: string };
+          jsonResponse(res, {
+            data: { token: `otp-token-${parsed.mobileNumber}` },
+            status: "OK",
+          });
+          return;
+        }
+        if (req.method === "POST" && url.pathname === "/gateway/auth/verify") {
+          jsonResponse(res, {
+            data: {
+              data: {
+                refreshToken: "login-refresh-token",
+                token: "login-access-token",
+                userData: { id: "login-user" },
+              },
+            },
+            status: "OK",
           });
           return;
         }
@@ -543,6 +566,87 @@ describe("CLI integration against a mocked API", () => {
       code: "LOGIN_INPUT_REQUIRED",
     });
     expect(calls).toHaveLength(0);
+  });
+
+  it("logs in with explicit phone and OTP without prompting", async () => {
+    delete process.env.TRANQUILO_TOKEN;
+    delete process.env.TRANQUILO_REFRESH_TOKEN;
+    await clearCredentials();
+
+    const output = await loginAction({
+      noInteractive: true,
+      otp: "123456",
+      phone: "+919999999999",
+    });
+
+    expect(JSON.parse(output)).toMatchObject({
+      ok: true,
+      storage: "encrypted-file",
+      userId: "login-user",
+    });
+    const loginCall = calls.find(
+      (call) =>
+        call.method === "POST" &&
+        new URL(call.url ?? "", baseUrl).pathname === "/gateway/auth/login"
+    );
+    const verifyCall = calls.find(
+      (call) =>
+        call.method === "POST" &&
+        new URL(call.url ?? "", baseUrl).pathname === "/gateway/auth/verify"
+    );
+    expect(JSON.parse(loginCall?.body ?? "{}")).toEqual({
+      mobileNumber: "+919999999999",
+    });
+    expect(JSON.parse(verifyCall?.body ?? "{}")).toEqual({
+      idtoken: "123456",
+      mobileNumber: "+919999999999",
+      referralCode: null,
+      token: "otp-token-+919999999999",
+    });
+    await expect(loadCredentials()).resolves.toMatchObject({
+      accessToken: "login-access-token",
+      mobileNumber: "+919999999999",
+      refreshToken: "login-refresh-token",
+      userId: "login-user",
+    });
+  });
+
+  it("supports agent-safe two-step login without prompting", async () => {
+    delete process.env.TRANQUILO_TOKEN;
+    delete process.env.TRANQUILO_REFRESH_TOKEN;
+    await clearCredentials();
+
+    const start = JSON.parse(
+      await loginStartAction({
+        noInteractive: true,
+        phone: "+919999999999",
+      })
+    ) as JsonObject;
+    expect(start).toMatchObject({
+      ok: true,
+      mobileNumber: "+919999999999",
+    });
+    expect(start.loginSessionId).toEqual(expect.any(String));
+
+    const verify = JSON.parse(
+      await loginVerifyAction({
+        noInteractive: true,
+        otp: "123456",
+        session: String(start.loginSessionId),
+      })
+    ) as JsonObject;
+
+    expect(verify).toMatchObject({
+      ok: true,
+      storage: "encrypted-file",
+      userId: "login-user",
+    });
+    await expect(loadCredentials()).resolves.toMatchObject({
+      accessToken: "login-access-token",
+      mobileNumber: "+919999999999",
+      refreshToken: "login-refresh-token",
+      userId: "login-user",
+    });
   });
 
   it("parses --no-interactive for login without opening a prompt", () => {

@@ -4,12 +4,11 @@ description: "Install Tranquilo, verify it, and configure local AI integrations.
 icon: "download"
 ---
 
-# Install Tranquilo
 
 CLI version: `0.1.1`
 
 ```sh
-curl -fsSL https://tranquilo-ai.vercel.app/releases/v0.1.1/install.sh | sh
+curl -fsSL https://tranquilo-ai.vercel.app/install.sh | sh
 ```
 
 <Steps>
@@ -17,7 +16,7 @@ curl -fsSL https://tranquilo-ai.vercel.app/releases/v0.1.1/install.sh | sh
     Paste the installer into a local terminal. It detects macOS, Linux, or bash-on-Windows, verifies checksums, installs the binary, and configures supported local AI integrations when available.
   </Step>
   <Step title="Login">
-    Run `tranquilo login` in your terminal. OTP entry should happen locally, not inside an AI chat.
+    Run `tranquilo login` in your terminal, or ask a local agent to log in and provide the phone number and Pronto OTP when prompted.
   </Step>
   <Step title="Verify">
     Run `tranquilo doctor` and `tranquilo status` to confirm local setup.

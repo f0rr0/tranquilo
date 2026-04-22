@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 interface ReleaseMetadata {
   docsUrl?: string;
+  version?: string;
 }
 
 function generatedRelease(): ReleaseMetadata {
@@ -17,13 +18,14 @@ function generatedRelease(): ReleaseMetadata {
 }
 
 export function latestDocsPath(): string {
-  const docsUrl = generatedRelease().docsUrl;
+  const release = generatedRelease();
+  const docsUrl = release.docsUrl;
   if (!docsUrl) {
-    return "/docs/latest";
+    return release.version ? `/docs/versions/v${release.version}` : "/docs";
   }
   try {
     return new URL(docsUrl).pathname;
   } catch {
-    return "/docs/latest";
+    return release.version ? `/docs/versions/v${release.version}` : "/docs";
   }
 }

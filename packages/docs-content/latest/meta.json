@@ -1,6 +1,0 @@
-{
-  "title": "Latest",
-  "root": true,
-  "defaultOpen": true,
-  "pages": ["index", "install", "auth", "househelp", "manage", "agents"]
-}

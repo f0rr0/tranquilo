@@ -89,9 +89,12 @@ export class TranquiloClient {
     } = {}
   ): Promise<T> {
     if (options.auth && !this.credentials?.accessToken) {
-      throw new TranquiloError("Not logged in. Run `tranquilo login` first.", {
-        code: "NOT_AUTHENTICATED",
-      });
+      throw new TranquiloError(
+        "Not logged in. Run `tranquilo login`, or use auth_login_start/auth_login_verify from MCP first.",
+        {
+          code: "NOT_AUTHENTICATED",
+        }
+      );
     }
 
     const url = new URL(pathname, options.baseUrl ?? this.config.baseUrl);

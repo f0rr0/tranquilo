@@ -9,6 +9,7 @@ import {
 } from "./address";
 import { installAgent } from "./agent-install";
 import { TranquiloClient } from "./api";
+import { saveVerifiedLogin, tokenFromLoginStart } from "./auth";
 import {
   checkoutStatus,
   copyPaymentUri,
@@ -38,6 +39,11 @@ import {
   resolveHousehelpOptions,
   slotWatchWindowFromHousehelpInput,
 } from "./househelp";
+import {
+  createLoginSession,
+  deleteLoginSession,
+  getLoginSession,
+} from "./login-session";
 import { rememberedUpiApp, rememberUpiApp } from "./payment-preferences";
 import { assertScheduledServiceable } from "./serviceability";
 import {
@@ -57,9 +63,8 @@ import {
   clearCredentials,
   credentialStorageStatus,
   loadCredentials,
-  saveCredentials,
 } from "./storage";
-import type { BookingStatusPreset, Credentials, JsonObject } from "./types";
+import type { BookingStatusPreset, JsonObject } from "./types";
 import { TranquiloError } from "./types";
 import {
   allowedUpiAppText,
@@ -87,31 +92,6 @@ function numberValue(value: unknown): number | undefined {
 
 function json(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
-}
-
-function tokenFromVerify(payload: JsonObject): {
-  accessToken: string;
-  refreshToken?: string | undefined;
-  userId?: string | undefined;
-} {
-  const topData = payload.data as JsonObject | undefined;
-  const verifyData = topData?.data as JsonObject | undefined;
-  const token = verifyData?.token;
-  if (typeof token !== "string" || !token) {
-    throw new TranquiloError("Login verification did not return a token.", {
-      code: "LOGIN_VERIFY_FAILED",
-      details: payload,
-    });
-  }
-  const userData = verifyData?.userData as JsonObject | undefined;
-  return {
-    accessToken: token,
-    refreshToken:
-      typeof verifyData?.refreshToken === "string"
-        ? verifyData.refreshToken
-        : undefined,
-    userId: typeof userData?.id === "string" ? userData.id : undefined,
-  };
 }
 
 function formatHomeDetails(address: NormalizedAddress): string {
@@ -724,27 +704,78 @@ export async function loginAction(options: {
     options.phone ?? (await input({ message: "Mobile number" }));
   const client = new TranquiloClient(cfg, null);
   const start = await client.loginStart(mobileNumber);
-  const startData = start.data as JsonObject | undefined;
-  const token = startData?.token;
-  if (typeof token !== "string" || !token) {
-    throw new TranquiloError("Login start did not return an OTP token.", {
-      code: "LOGIN_START_FAILED",
-      details: start,
-    });
-  }
+  const token = tokenFromLoginStart(start);
   const idtoken = options.otp ?? (await password({ message: "OTP" }));
   const verified = await client.verifyLogin({
     token,
     idtoken,
     mobileNumber,
   });
-  const tokens = tokenFromVerify(verified);
-  const credentials: Credentials = {
-    ...tokens,
-    mobileNumber,
-    savedAt: new Date().toISOString(),
-  };
-  const storage = await saveCredentials(credentials);
+  const { credentials, storage } = await saveVerifiedLogin(
+    verified,
+    mobileNumber
+  );
+  return json({ ok: true, storage, userId: credentials.userId });
+}
+
+export async function loginStartAction(options: {
+  noInteractive?: boolean | undefined;
+  phone?: string | undefined;
+}): Promise<string> {
+  if (options.noInteractive && !options.phone) {
+    throw new TranquiloError("Pass --phone when using --no-interactive.", {
+      code: "LOGIN_INPUT_REQUIRED",
+      details: { missing: ["phone"] },
+    });
+  }
+  const cfg = await ensureConfig();
+  const mobileNumber =
+    options.phone ?? (await input({ message: "Mobile number" }));
+  const client = new TranquiloClient(cfg, null);
+  const token = tokenFromLoginStart(await client.loginStart(mobileNumber));
+  const session = await createLoginSession({ mobileNumber, token });
+  return json({
+    ok: true,
+    ...session,
+    nextAction:
+      "Ask the user for the Pronto OTP, then run tranquilo login verify --session <loginSessionId> --otp <otp> --json --no-interactive.",
+  });
+}
+
+export async function loginVerifyAction(options: {
+  noInteractive?: boolean | undefined;
+  otp?: string | undefined;
+  session?: string | undefined;
+}): Promise<string> {
+  if (options.noInteractive && !(options.session && options.otp)) {
+    throw new TranquiloError(
+      "Pass both --session and --otp when using --no-interactive.",
+      {
+        code: "LOGIN_INPUT_REQUIRED",
+        details: {
+          missing: [
+            options.session ? undefined : "session",
+            options.otp ? undefined : "otp",
+          ].filter(Boolean),
+        },
+      }
+    );
+  }
+  const loginSessionId =
+    options.session ?? (await input({ message: "Login session id" }));
+  const idtoken = options.otp ?? (await password({ message: "OTP" }));
+  const session = await getLoginSession(loginSessionId);
+  const client = new TranquiloClient(await ensureConfig(), null);
+  const verified = await client.verifyLogin({
+    token: session.token,
+    idtoken,
+    mobileNumber: session.mobileNumber,
+  });
+  await deleteLoginSession(loginSessionId);
+  const { credentials, storage } = await saveVerifiedLogin(
+    verified,
+    session.mobileNumber
+  );
   return json({ ok: true, storage, userId: credentials.userId });
 }
 

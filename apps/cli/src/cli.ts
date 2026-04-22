@@ -22,6 +22,8 @@ import {
   househelpWatchCreateAction,
   installAgentAction,
   loginAction,
+  loginStartAction,
+  loginVerifyAction,
   logoutAction,
   slotWatchDeleteAction,
   slotWatchListAction,
@@ -842,7 +844,7 @@ export const mainCommand = defineCommand({
         },
         otp: {
           type: "string",
-          description: "OTP code; prefer interactive prompt for normal use",
+          description: "OTP code for non-interactive or agent login",
           valueHint: "code",
         },
         json: { type: "boolean", description: "Print JSON" },
@@ -856,6 +858,58 @@ export const mainCommand = defineCommand({
             phone: textArg(args.phone),
           })
         ),
+      subCommands: {
+        start: defineCommand({
+          meta: {
+            name: "start",
+            description: "Send OTP and create a short-lived login session",
+          },
+          args: {
+            phone: {
+              type: "string",
+              description: "Mobile number",
+              valueHint: "number",
+            },
+            json: { type: "boolean", description: "Print JSON" },
+            ...noInteractiveArg,
+          },
+          run: ({ args }) =>
+            writeResult(
+              loginStartAction({
+                noInteractive: noInteractiveValue(args),
+                phone: textArg(args.phone),
+              })
+            ),
+        }),
+        verify: defineCommand({
+          meta: {
+            name: "verify",
+            description: "Verify OTP for a pending login session",
+          },
+          args: {
+            session: {
+              type: "string",
+              description: "Login session id from login start",
+              valueHint: "id",
+            },
+            otp: {
+              type: "string",
+              description: "OTP code for the pending login session",
+              valueHint: "code",
+            },
+            json: { type: "boolean", description: "Print JSON" },
+            ...noInteractiveArg,
+          },
+          run: ({ args }) =>
+            writeResult(
+              loginVerifyAction({
+                noInteractive: noInteractiveValue(args),
+                otp: textArg(args.otp),
+                session: textArg(args.session),
+              })
+            ),
+        }),
+      },
     }),
     logout: defineCommand({
       meta: { name: "logout", description: "Clear stored credentials" },

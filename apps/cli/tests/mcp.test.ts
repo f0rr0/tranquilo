@@ -1,6 +1,10 @@
+import fsp from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { AGENT_CATALOG } from "@tranquilo/cli-model/agent-catalog";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createMcpServer } from "../src/mcp";
+import { clearCredentials, loadCredentials } from "../src/storage";
 
 const {
   agentSafeCliCommands,
@@ -37,6 +41,8 @@ describe("MCP server", () => {
       "address_show",
       "address_use",
       "addresses_list",
+      "auth_login_start",
+      "auth_login_verify",
       "auth_status",
       "bookings_list",
       "househelp_find_slots",
@@ -64,6 +70,10 @@ describe("MCP server", () => {
     expect(tool("househelp_options").annotations?.readOnlyHint).toBe(true);
     expect(tool("auth_status").description).toContain("First tool");
     expect(tool("auth_status").description).toContain("maid");
+    expect(tool("auth_login_start").description).toContain("phone number");
+    expect(tool("auth_login_verify").description).toContain(
+      "OTP is allowed only for this login tool"
+    );
     expect(tool("househelp_find_slots").description).toContain(
       "find a maid tomorrow"
     );
@@ -81,6 +91,8 @@ describe("MCP server", () => {
       "notify-only"
     );
     expect(tool("househelp_find_slots").annotations?.readOnlyHint).toBe(true);
+    expect(tool("auth_login_start").annotations?.readOnlyHint).toBe(false);
+    expect(tool("auth_login_verify").annotations?.readOnlyHint).toBe(false);
     expect(tool("househelp_prepare_booking").annotations?.readOnlyHint).toBe(
       false
     );
@@ -95,6 +107,8 @@ describe("MCP server", () => {
         .sort()
     ).toEqual([
       "address_use",
+      "auth_login_start",
+      "auth_login_verify",
       "househelp_prepare_booking",
       "househelp_watch_create",
       "househelp_watch_delete",
@@ -125,6 +139,97 @@ describe("MCP server", () => {
       expect(command.requiresUserApproval).toBe(true);
       expect(command.printsQr).toBe(true);
       expect(command.pollsPayment).toBe(true);
+    }
+  });
+
+  it("supports two-step agent OTP login and stores credentials locally", async () => {
+    const originalEnv = { ...process.env };
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "tranquilo-mcp-"));
+    process.env.TRANQUILO_CONFIG_DIR = tempDir;
+    process.env.TRANQUILO_STATE_DIR = tempDir;
+    process.env.TRANQUILO_BASE_URL = "https://mock.pronto.test";
+    delete process.env.TRANQUILO_TOKEN;
+    delete process.env.TRANQUILO_REFRESH_TOKEN;
+    await clearCredentials();
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string | URL, init?: RequestInit) => {
+        const requestUrl = new URL(String(url));
+        const body =
+          typeof init?.body === "string" ? JSON.parse(init.body) : {};
+        if (requestUrl.pathname === "/gateway/auth/login") {
+          return new Response(
+            JSON.stringify({
+              data: { token: `otp-token-${body.mobileNumber}` },
+            }),
+            { headers: { "content-type": "application/json" }, status: 200 }
+          );
+        }
+        if (requestUrl.pathname === "/gateway/auth/verify") {
+          return new Response(
+            JSON.stringify({
+              data: {
+                data: {
+                  refreshToken: "refresh-token",
+                  token: "access-token",
+                  userData: { id: "user-1" },
+                },
+              },
+              status: "OK",
+            }),
+            { headers: { "content-type": "application/json" }, status: 200 }
+          );
+        }
+        return new Response(JSON.stringify({ status: "NOT_FOUND" }), {
+          status: 404,
+        });
+      })
+    );
+
+    try {
+      const server = createMcpServer() as unknown as {
+        _registeredTools: Record<
+          string,
+          { handler: (args: Record<string, unknown>) => Promise<unknown> }
+        >;
+      };
+      const startTool = server._registeredTools.auth_login_start;
+      const verifyTool = server._registeredTools.auth_login_verify;
+      if (!(startTool && verifyTool)) {
+        throw new Error("Expected MCP login tools to be registered.");
+      }
+      const start = (await startTool.handler({
+        mobileNumber: "+919999999999",
+      })) as { structuredContent?: Record<string, unknown> };
+      expect(start.structuredContent).toMatchObject({
+        mobileNumber: "+919999999999",
+      });
+      expect(start.structuredContent?.loginSessionId).toEqual(
+        expect.any(String)
+      );
+
+      const verify = (await verifyTool.handler({
+        loginSessionId: start.structuredContent?.loginSessionId,
+        otp: "123456",
+      })) as { structuredContent?: Record<string, unknown> };
+
+      expect(verify.structuredContent).toMatchObject({
+        authenticated: true,
+        mobileNumber: "+919999999999",
+        storage: "encrypted-file",
+        userId: "user-1",
+      });
+      await expect(loadCredentials()).resolves.toMatchObject({
+        accessToken: "access-token",
+        mobileNumber: "+919999999999",
+        refreshToken: "refresh-token",
+        userId: "user-1",
+      });
+    } finally {
+      vi.unstubAllGlobals();
+      process.env = originalEnv;
+      await fsp.rm(tempDir, { force: true, recursive: true });
     }
   });
 });

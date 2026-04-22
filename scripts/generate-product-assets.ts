@@ -517,7 +517,7 @@ House Help is the primary Tranquilo workflow. The CLI discovers the durations an
     Use ${code("tranquilo househelp find")} with duration, date, and window preferences. Slots are transient and should be rechecked immediately before checkout.
   </Step>
   <Step title="Book and pay">
-    Use ${code("tranquilo househelp book --pay --upi-app phonepe")} in a local terminal after confirming the exact slot. The QR flow is local and user-facing, and the selected UPI app is remembered.
+    Use ${code("tranquilo househelp book --pay --open-qr --upi-app phonepe")} in a local terminal after confirming the exact slot. The QR flow is local and user-facing, and the selected UPI app is remembered.
   </Step>
 </Steps>
 
@@ -597,7 +597,7 @@ function househelpBookPage(): string {
   })}
 Booking is a mutating local-terminal flow. Tranquilo rechecks the selected slot, sets the correct cart item, creates checkout, prints a QR/payment page handoff when available, polls payment, and finalizes the Pronto booking.
 
-${sh('tranquilo househelp book --duration 60 --slot "tomorrow 6pm" --address-id 990330 --pay --upi-app phonepe')}
+${sh('tranquilo househelp book --duration 60 --slot "tomorrow 6pm" --address-id 990330 --pay --open-qr --upi-app phonepe')}
 
 <Warning>
   Slots are highly transient. A slot found earlier is not reliable later; Tranquilo revalidates before checkout and stops if the backend reports the slot is stale or overbooked.
@@ -609,7 +609,7 @@ ${flagRows(["househelp", "book"])}
 
 ## Agent behavior
 
-Local terminal agents may run this command after the user says to book and confirms any ambiguity. If no UPI preference exists, ask the user whether to use PhonePe, Google Pay, or Paytm and pass the answer as ${code("--upi-app")}. Hosted or web agents should use MCP to prepare a handoff and tell the user to complete payment locally.
+Local terminal agents may run this command after the user says to book and confirms any ambiguity. In Codex CLI, include ${code("--open-qr")} so the saved PNG opens in the local image viewer instead of depending on expanded terminal output. If no UPI preference exists, ask the user whether to use PhonePe, Google Pay, or Paytm and pass the answer as ${code("--upi-app")}. Hosted or web agents should use MCP to prepare a handoff and tell the user to complete payment locally.
 `;
 }
 
@@ -715,9 +715,11 @@ function paymentsPage(): string {
   })}
 Payment is user-local. Tranquilo routes direct UPI payment through a user-selected UPI app, renders a QR/link from Juspay, then polls payment status and calls Pronto finalization after a successful charge.
 
-${sh("tranquilo checkout pay <order-id> --upi-app phonepe")}
+${sh("tranquilo checkout pay <order-id> --open-qr --upi-app phonepe")}
 
 Allowed UPI apps are ${code("phonepe")}, ${code("googlepay")}, and ${code("paytm")}. The first selection is stored locally and reused for later payments; pass ${code("--upi-app")} again to change it.
+
+Use ${code("--open-qr")} in terminal agents such as Codex CLI. Tranquilo still prints the terminal QR and saved PNG path, but opening the PNG is the most reliable way to make the QR visible when long command output is collapsed.
 
 <Warning>
   Do not run ${code("--open-intent")} from an agent unless the user explicitly asks for local OS/app opening. It is intentionally not part of the default agent-safe flow.

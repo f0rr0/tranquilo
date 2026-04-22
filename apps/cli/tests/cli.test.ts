@@ -5,6 +5,7 @@ import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import open from "open";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { terminalQr } from "../src/checkout";
 import {
@@ -28,6 +29,8 @@ import {
   saveCredentials,
 } from "../src/storage";
 import type { Credentials, JsonObject } from "../src/types";
+
+vi.mock("open", () => ({ default: vi.fn(() => Promise.resolve()) }));
 
 const ANSI_PATTERN = new RegExp(
   `${String.fromCharCode(27)}\\[[0-?]*[ -/]*[@-~]`,
@@ -183,6 +186,7 @@ describe("CLI integration against a mocked API", () => {
   let tempDir: string;
 
   beforeEach(async () => {
+    vi.mocked(open).mockClear();
     calls = [];
     activeAddressId = "988639";
     cartCatalogInfo = { "27": 2 };
@@ -1602,6 +1606,33 @@ describe("CLI integration against a mocked API", () => {
     expect(output).toContain("Payment: UPI_PAY");
     expect(output).toContain("QR image:");
     expect(output).toContain("Status: not watched");
+    expect(paymentStatusCalls).toBe(0);
+  });
+
+  it("opens the saved QR image when requested", async () => {
+    const created = JSON.parse(
+      await househelpBookAction({
+        date: "2026-04-20",
+        duration: "60",
+        handoff: true,
+        json: true,
+        noInteractive: true,
+        slot: "2026-04-20T18:00:00",
+        window: "after-work",
+      })
+    ) as { order: { orderId: string } };
+    const qrPath = path.join(tempDir, "payment.png");
+
+    const output = await checkoutPayAction(created.order.orderId, {
+      openQr: true,
+      saveQr: qrPath,
+      upiApp: "phonepe",
+      watch: false,
+    });
+
+    expect(output).toContain("Opened QR image in the OS image viewer.");
+    expect(fs.existsSync(qrPath)).toBe(true);
+    expect(open).toHaveBeenCalledWith(qrPath);
     expect(paymentStatusCalls).toBe(0);
   });
 

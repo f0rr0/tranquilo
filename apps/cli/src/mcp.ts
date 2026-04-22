@@ -502,7 +502,7 @@ export function createMcpServer(): McpServer {
               `Slot: ${args.slot}.`,
               args.addressId ? `Address id: ${args.addressId}.` : "",
               "Use the exact startTime from househelp_find_slots; do not rely on human-only interactive booking.",
-              "If this is a local terminal agent and the user said to book this slot, ask which UPI app to use if no local preference exists, then run the local CLI House Help book command with --pay --yes --upi-app <phonepe|googlepay|paytm> so it prints QR immediately before polling. Do not ask a second pay-now question. If this is a hosted/web chat session, return the payCommand to the user. Never use OS open commands.",
+              "If this is a local terminal agent and the user said to book this slot, ask which UPI app to use if no local preference exists, then run the local CLI House Help book command with --pay --yes --open-qr --upi-app <phonepe|googlepay|paytm> so it prints QR, opens the saved QR image, and then polls. Do not ask a second pay-now question. If this is a hosted/web chat session, return the payCommand to the user. Never use --open-intent or raw OS commands to open a UPI app.",
             ]
               .filter(Boolean)
               .join(" "),

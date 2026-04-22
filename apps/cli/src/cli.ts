@@ -234,6 +234,10 @@ const checkoutCommand = defineCommand({
           type: "boolean",
           description: "Best-effort OS open of the UPI intent",
         },
+        "open-qr": {
+          type: "boolean",
+          description: "Open the saved QR image with the OS image viewer",
+        },
         "qr-size": {
           type: "enum",
           description: "Terminal QR size",
@@ -264,6 +268,7 @@ const checkoutCommand = defineCommand({
             json: args.json as boolean | undefined,
             noInteractive: noInteractiveValue(args),
             openIntent: args.openIntent as boolean | undefined,
+            openQr: args.openQr as boolean | undefined,
             qrSize: textArg(args.qrSize) as
               | "compact"
               | "normal"
@@ -499,6 +504,10 @@ const househelpCommand = defineCommand({
           description: "Save payment QR image to path",
           valueHint: "path",
         },
+        "open-qr": {
+          type: "boolean",
+          description: "Open the saved QR image with the OS image viewer",
+        },
         "qr-size": {
           type: "enum",
           description: "Terminal QR size for --pay",
@@ -536,6 +545,7 @@ const househelpCommand = defineCommand({
             intervalMs: numberArg(args.intervalMs),
             json: args.json as boolean | undefined,
             noInteractive: noInteractiveValue(args),
+            openQr: args.openQr as boolean | undefined,
             pay: args.pay as boolean | undefined,
             qrSize: textArg(args.qrSize) as
               | "compact"
@@ -639,6 +649,10 @@ const househelpCommand = defineCommand({
               description: "Save payment QR image to path",
               valueHint: "path",
             },
+            "open-qr": {
+              type: "boolean",
+              description: "Open the saved QR image with the OS image viewer",
+            },
             "qr-size": {
               type: "enum",
               description: "Terminal QR size for --pay",
@@ -673,6 +687,7 @@ const househelpCommand = defineCommand({
                 intervalMs: numberArg(args.intervalMs),
                 json: args.json as boolean | undefined,
                 noInteractive: noInteractiveValue(args),
+                openQr: args.openQr as boolean | undefined,
                 pay: args.pay as boolean | undefined,
                 qrSize: textArg(args.qrSize) as
                   | "compact"

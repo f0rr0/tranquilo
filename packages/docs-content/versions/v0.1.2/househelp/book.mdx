@@ -8,7 +8,7 @@ icon: "badge-check"
 Booking is a mutating local-terminal flow. Tranquilo rechecks the selected slot, sets the correct cart item, creates checkout, prints a QR/payment page handoff when available, polls payment, and finalizes the Pronto booking.
 
 ```sh
-tranquilo househelp book --duration 60 --slot "tomorrow 6pm" --address-id 990330 --pay --upi-app phonepe
+tranquilo househelp book --duration 60 --slot "tomorrow 6pm" --address-id 990330 --pay --open-qr --upi-app phonepe
 ```
 
 <Warning>
@@ -43,6 +43,7 @@ tranquilo househelp book --duration 60 --slot "tomorrow 6pm" --address-id 990330
 | `--handoff` | No | Prepare checkout only and print the local payment command instead of QR |
 | `--copy-link` | No | Copy the UPI URI to clipboard during payment |
 | `--save-qr <path>` | No | Save payment QR image to path |
+| `--open-qr` | No | Open the saved QR image with the OS image viewer |
 | `--qr-size <size>` | No | Terminal QR size for --pay Allowed values: `compact`, `small`, `normal`. Default: `compact`. |
 | `--upi-app <app>` | No | UPI app to route payment through; required for --pay until a local preference is saved Allowed values: `phonepe`, `googlepay`, `paytm`. |
 | `--interval-ms <ms>` | No | Payment poll interval for --pay |
@@ -52,4 +53,4 @@ tranquilo househelp book --duration 60 --slot "tomorrow 6pm" --address-id 990330
 
 ## Agent behavior
 
-Local terminal agents may run this command after the user says to book and confirms any ambiguity. If no UPI preference exists, ask the user whether to use PhonePe, Google Pay, or Paytm and pass the answer as `--upi-app`. Hosted or web agents should use MCP to prepare a handoff and tell the user to complete payment locally.
+Local terminal agents may run this command after the user says to book and confirms any ambiguity. In Codex CLI, include `--open-qr` so the saved PNG opens in the local image viewer instead of depending on expanded terminal output. If no UPI preference exists, ask the user whether to use PhonePe, Google Pay, or Paytm and pass the answer as `--upi-app`. Hosted or web agents should use MCP to prepare a handoff and tell the user to complete payment locally.

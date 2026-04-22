@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function Page({ params }: PageProps) {
   const { slug = [] } = await params;
-  if (slug.length === 0) {
+  if (slug.length === 0 || (slug.length === 1 && slug[0] === "latest")) {
     redirect(latestDocsPath());
   }
 

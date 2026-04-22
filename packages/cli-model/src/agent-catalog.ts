@@ -448,9 +448,9 @@ const LOCAL_AGENT_CLI_COMMANDS = [
   {
     agentSafe: true,
     command:
-      "tranquilo househelp book --pay --yes --upi-app <phonepe|googlepay|paytm>",
+      "tranquilo househelp book --pay --yes --open-qr --upi-app <phonepe|googlepay|paytm>",
     description:
-      "Local terminal booking path after user approval: prepare checkout, route payment through the user's selected UPI app, print QR immediately, poll payment, and finalize the booking.",
+      "Local terminal booking path after user approval: prepare checkout, route payment through the user's selected UPI app, print QR immediately, open the saved QR image, poll payment, and finalize the booking.",
     pollsPayment: true,
     printsQr: true,
     requiresLocalTerminal: true,
@@ -458,9 +458,10 @@ const LOCAL_AGENT_CLI_COMMANDS = [
   },
   {
     agentSafe: true,
-    command: "tranquilo checkout pay --upi-app <phonepe|googlepay|paytm>",
+    command:
+      "tranquilo checkout pay --open-qr --upi-app <phonepe|googlepay|paytm>",
     description:
-      "Local terminal agent path for an already prepared checkout order. Ask the user which UPI app to use if no remembered preference exists.",
+      "Local terminal agent path for an already prepared checkout order. Ask the user which UPI app to use if no remembered preference exists, and open the saved QR image for reliable scanning.",
     pollsPayment: true,
     printsQr: true,
     requiresLocalTerminal: true,

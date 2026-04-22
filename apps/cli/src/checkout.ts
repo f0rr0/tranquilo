@@ -1043,6 +1043,10 @@ export async function savePaymentQr(
   await QRCode.toFile(file, paymentUri);
 }
 
+export async function openQrImage(file: string): Promise<void> {
+  await open(path.resolve(file));
+}
+
 export function copyPaymentUri(paymentUri: string): Promise<void> {
   return clipboard.write(paymentUri);
 }

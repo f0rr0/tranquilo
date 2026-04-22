@@ -15,6 +15,7 @@ import {
   copyPaymentUri,
   defaultPaymentQrPath,
   openPaymentUri,
+  openQrImage,
   recreateCheckoutPaymentUri,
   resolveCheckoutPaymentUri,
   savePaymentQr,
@@ -77,6 +78,16 @@ const SLOT_TIME_PATTERN =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?/;
 const MANUAL_SLOT_CHOICE = "__manual__";
 const SHELL_SAFE_PATTERN = /^[A-Za-z0-9_./:@%+=,-]+$/;
+
+type ResolvedCheckoutPayment = Awaited<
+  ReturnType<typeof resolveCheckoutPaymentUri>
+>;
+
+interface PreparedPaymentOutput {
+  openedQr: boolean;
+  openQrError?: string | undefined;
+  savedQrPath?: string | undefined;
+}
 
 function dataOf(payload: JsonObject): unknown {
   return payload.data ?? payload;
@@ -1014,6 +1025,7 @@ export async function househelpBookAction(
     intervalMs?: number | undefined;
     json?: boolean | undefined;
     noInteractive?: boolean | undefined;
+    openQr?: boolean | undefined;
     pay?: boolean | undefined;
     rank?: number | undefined;
     qrSize?: TerminalQrSize | undefined;
@@ -1048,6 +1060,7 @@ export async function househelpBookAction(
             intervalMs: options.intervalMs,
             json: true,
             noInteractive: options.noInteractive,
+            openQr: options.openQr,
             qrSize: options.qrSize,
             saveQr: options.saveQr,
             timeoutMs: options.timeoutMs,
@@ -1063,6 +1076,7 @@ export async function househelpBookAction(
       copyLink: options.copyLink,
       intervalMs: options.intervalMs,
       noInteractive: options.noInteractive,
+      openQr: options.openQr,
       qrSize: options.qrSize,
       saveQr: options.saveQr,
       timeoutMs: options.timeoutMs,
@@ -1126,6 +1140,7 @@ export async function househelpWatchBookAction(
     intervalMs?: number | undefined;
     json?: boolean | undefined;
     noInteractive?: boolean | undefined;
+    openQr?: boolean | undefined;
     pay?: boolean | undefined;
     qrSize?: TerminalQrSize | undefined;
     saveQr?: string | undefined;
@@ -1187,6 +1202,7 @@ export async function househelpWatchBookAction(
       copyLink: options.copyLink,
       intervalMs: options.intervalMs,
       noInteractive: options.noInteractive,
+      openQr: options.openQr,
       qrSize: options.qrSize,
       saveQr: options.saveQr,
       timeoutMs: options.timeoutMs,
@@ -1204,44 +1220,49 @@ export async function househelpWatchBookAction(
 }
 
 async function preparePaymentOutput(
-  payment: Awaited<ReturnType<typeof resolveCheckoutPaymentUri>>,
+  payment: ResolvedCheckoutPayment,
   options: {
     copyLink?: boolean | undefined;
     json?: boolean | undefined;
     openIntent?: boolean | undefined;
+    openQr?: boolean | undefined;
     saveQr?: string | undefined;
   }
-): Promise<string | undefined> {
+): Promise<PreparedPaymentOutput> {
   if (options.copyLink) {
     await copyPaymentUri(payment.paymentUri);
   }
-  const savedQrPath = options.json
-    ? options.saveQr
-    : (options.saveQr ?? defaultPaymentQrPath(payment.order.orderId));
+  const savedQrPath =
+    options.json && !options.openQr
+      ? options.saveQr
+      : (options.saveQr ?? defaultPaymentQrPath(payment.order.orderId));
   if (savedQrPath) {
     await savePaymentQr(payment.paymentUri, savedQrPath);
+  }
+  let openedQr = false;
+  let openQrError: string | undefined;
+  if (options.openQr && savedQrPath) {
+    try {
+      await openQrImage(savedQrPath);
+      openedQr = true;
+    } catch (error) {
+      openQrError =
+        error instanceof Error ? error.message : "Unknown QR open failure";
+    }
   }
   if (options.openIntent) {
     await openPaymentUri(payment.paymentUri);
   }
-  return savedQrPath;
+  return { openQrError, openedQr, savedQrPath };
 }
 
-export async function checkoutPayAction(
+async function resolveCheckoutPaymentForAction(
   orderId: string,
   options: {
-    copyLink?: boolean | undefined;
-    intervalMs?: number | undefined;
-    json?: boolean | undefined;
     noInteractive?: boolean | undefined;
-    openIntent?: boolean | undefined;
-    qrSize?: TerminalQrSize | undefined;
-    saveQr?: string | undefined;
-    timeoutMs?: number | undefined;
     upiApp?: string | undefined;
-    watch?: boolean | undefined;
-  } = {}
-): Promise<string> {
+  }
+): Promise<{ payment: ResolvedCheckoutPayment; upiApp?: UpiApp | undefined }> {
   let upiApp = options.upiApp
     ? await resolvePaymentUpiApp(options)
     : await rememberedUpiApp();
@@ -1261,36 +1282,84 @@ export async function checkoutPayAction(
     }
     throw error;
   });
-  const savedQrPath = await preparePaymentOutput(payment, options);
+  return { payment, upiApp };
+}
+
+function renderPaymentInstructions(
+  payment: ResolvedCheckoutPayment,
+  paymentOutput: PreparedPaymentOutput,
+  options: {
+    copyLink?: boolean | undefined;
+    openIntent?: boolean | undefined;
+  },
+  upiApp?: UpiApp | undefined,
+  qr = ""
+): string {
+  const { openQrError, openedQr, savedQrPath } = paymentOutput;
+  return [
+    payment.replacedOrderId
+      ? `Previous order ${payment.replacedOrderId} could not be reopened; created fresh order ${payment.order.orderId}.`
+      : undefined,
+    `Order: ${payment.order.orderId}`,
+    `Amount: ${formatAmount(payment.order.amount)}`,
+    `Slot: ${payment.order.slot}`,
+    `Payment: ${payment.source}`,
+    `UPI app: ${payment.upiApp?.label ?? upiApp?.label ?? "-"}`,
+    `QR image: ${savedQrPath}`,
+    "",
+    qr.trimEnd(),
+    "",
+    options.copyLink ? "UPI link copied to clipboard." : undefined,
+    savedQrPath ? `QR saved to ${savedQrPath}.` : undefined,
+    openedQr ? "Opened QR image in the OS image viewer." : undefined,
+    openQrError
+      ? `Could not open QR image automatically: ${openQrError}`
+      : undefined,
+    options.openIntent ? "Opened UPI intent with the OS." : undefined,
+  ]
+    .filter((line) => line !== undefined)
+    .join("\n");
+}
+
+export async function checkoutPayAction(
+  orderId: string,
+  options: {
+    copyLink?: boolean | undefined;
+    intervalMs?: number | undefined;
+    json?: boolean | undefined;
+    noInteractive?: boolean | undefined;
+    openIntent?: boolean | undefined;
+    openQr?: boolean | undefined;
+    qrSize?: TerminalQrSize | undefined;
+    saveQr?: string | undefined;
+    timeoutMs?: number | undefined;
+    upiApp?: string | undefined;
+    watch?: boolean | undefined;
+  } = {}
+): Promise<string> {
+  const { payment, upiApp } = await resolveCheckoutPaymentForAction(
+    orderId,
+    options
+  );
+  const paymentOutput = await preparePaymentOutput(payment, options);
 
   if (!options.json) {
     const qr = await terminalQr(payment.paymentUri, options.qrSize);
-    const instructions = [
-      payment.replacedOrderId
-        ? `Previous order ${payment.replacedOrderId} could not be reopened; created fresh order ${payment.order.orderId}.`
-        : undefined,
-      `Order: ${payment.order.orderId}`,
-      `Amount: ${formatAmount(payment.order.amount)}`,
-      `Slot: ${payment.order.slot}`,
-      `Payment: ${payment.source}`,
-      `UPI app: ${payment.upiApp?.label ?? upiApp?.label ?? "-"}`,
-      `QR image: ${savedQrPath}`,
-      "",
-      qr.trimEnd(),
-      "",
-      options.copyLink ? "UPI link copied to clipboard." : undefined,
-      savedQrPath ? `QR saved to ${savedQrPath}.` : undefined,
-      options.openIntent ? "Opened UPI intent with the OS." : undefined,
-    ]
-      .filter((line) => line !== undefined)
-      .join("\n");
+    const instructions = renderPaymentInstructions(
+      payment,
+      paymentOutput,
+      options,
+      upiApp,
+      qr
+    );
 
     if (options.watch === false) {
       return `${instructions}\nStatus: not watched\n`;
     }
 
+    const scanTarget = paymentOutput.openedQr ? "opened QR image" : "QR above";
     process.stdout.write(
-      `${instructions}\nWaiting for payment confirmation. Scan the QR above from your phone.\n`
+      `${instructions}\nWaiting for payment confirmation. Scan the ${scanTarget} from your phone.\n`
     );
     const status = await watchCheckoutStatus(payment.order.orderId, {
       intervalMs: options.intervalMs,
@@ -1316,9 +1385,11 @@ export async function checkoutPayAction(
     return json({
       copied: Boolean(options.copyLink),
       order: status?.order ?? payment.order,
+      openedQr: paymentOutput.openedQr,
+      openQrError: paymentOutput.openQrError,
       paymentUri: payment.paymentUri,
       replacedOrderId: payment.replacedOrderId,
-      savedQr: savedQrPath,
+      savedQr: paymentOutput.savedQrPath,
       source: payment.source,
       status,
       upiApp: payment.upiApp ?? upiApp,

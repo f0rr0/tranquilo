@@ -28,7 +28,7 @@ import {
   househelpPaymentHandoff,
   prepareHousehelpBooking,
   resolveHousehelpOptions,
-  slotWatchWindowFromHousehelpInput,
+  slotWatchInputFromHousehelpInput,
 } from "./househelp";
 import {
   createLoginSession,
@@ -303,13 +303,12 @@ export function createMcpServer(): McpServer {
     toolConfig("househelp_watch_create"),
     async (args: HousehelpWatchCreateInput) =>
       runTool(async () => {
+        const watchInput = slotWatchInputFromHousehelpInput(args);
         const resolved = await findHousehelpSlots(args);
         return {
           watch: await createSlotWatch({
             addressId: resolved.location.addressId,
-            date: args.date,
-            ...slotWatchWindowFromHousehelpInput(args),
-            fromDate: args.fromDate,
+            ...watchInput,
             item: resolved.queryListingIds,
             lat: resolved.location.addressId
               ? undefined
@@ -319,9 +318,7 @@ export function createMcpServer(): McpServer {
               : resolved.location.lng,
             name: args.name,
             desktopNotify: args.desktopNotify,
-            preset: args.preset,
             slackWebhookUrl: args.slackWebhookUrl,
-            toDate: args.toDate,
           }),
         };
       }, "House Help watch created.")

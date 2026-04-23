@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { Temporal } from "@js-temporal/polyfill";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { slotWatchInputFromHousehelpInput } from "../src/househelp";
 import {
   createSlotWatch,
   nextRunAtForWatch,
@@ -54,6 +55,134 @@ describe("slot watch planning helpers", () => {
     expect(() => resolveDateRange({ date: "2026-04-24" }, "UTC", now)).toThrow(
       "only be watched"
     );
+  });
+
+  it("maps House Help exact watch filters without falling back to defaults", () => {
+    const exactDate = slotWatchInputFromHousehelpInput({
+      exactDate: "2026-04-21",
+      window: "after-work",
+    });
+    expect(resolveDateRange(exactDate, "UTC", now)).toEqual({
+      from: "2026-04-21",
+      to: "2026-04-21",
+    });
+    expect(resolveWindow(exactDate)).toEqual({ preset: "after-work" });
+
+    const exactTime = slotWatchInputFromHousehelpInput({
+      exactDate: "2026-04-21",
+      exactTime: "18:30",
+      window: "after-work",
+    });
+    expect(resolveDateRange(exactTime, "UTC", now)).toEqual({
+      from: "2026-04-21",
+      to: "2026-04-21",
+    });
+    expect(resolveWindow(exactTime)).toEqual({
+      from: "18:30",
+      preset: "custom",
+      to: "18:30",
+    });
+
+    const exactSlot = slotWatchInputFromHousehelpInput({
+      exactSlot: "2026-04-22T19:15:00",
+      window: "after-work",
+    });
+    expect(resolveDateRange(exactSlot, "UTC", now)).toEqual({
+      from: "2026-04-22",
+      to: "2026-04-22",
+    });
+    expect(resolveWindow(exactSlot)).toEqual({
+      from: "19:15",
+      preset: "custom",
+      to: "19:15",
+    });
+  });
+
+  it("maps flexible House Help watch dates to persisted date ranges", () => {
+    expect(
+      resolveDateRange(
+        slotWatchInputFromHousehelpInput({
+          around: "2026-04-21",
+          flexDays: 1,
+        }),
+        "UTC",
+        now
+      )
+    ).toEqual({
+      from: "2026-04-20",
+      to: "2026-04-22",
+    });
+  });
+
+  it.each([
+    {
+      dateRange: { from: "2026-04-21", to: "2026-04-21" },
+      input: { date: "2026-04-21", window: "before-work" as const },
+      name: "date with preset window",
+      window: { preset: "before-work" },
+    },
+    {
+      dateRange: { from: "2026-04-21", to: "2026-04-22" },
+      input: {
+        fromDate: "2026-04-21",
+        timeWindow: ["18:00-22:00"],
+        toDate: "2026-04-22",
+      },
+      name: "from/to dates with custom window",
+      window: { from: "18:00", preset: "custom", to: "22:00" },
+    },
+    {
+      dateRange: {
+        from: "2026-04-21",
+        preset: "tomorrow",
+        to: "2026-04-21",
+      },
+      input: { preset: "tomorrow" as const, window: "smart" as const },
+      name: "preset with smart window",
+      window: { preset: "smart" },
+    },
+    {
+      dateRange: { from: "2026-04-21", to: "2026-04-22" },
+      input: {
+        exactTime: "07:30",
+        fromDate: "2026-04-21",
+        toDate: "2026-04-22",
+      },
+      name: "exact time over date range",
+      window: { from: "07:30", preset: "custom", to: "07:30" },
+    },
+    {
+      dateRange: { from: "2026-04-21", to: "2026-04-21" },
+      input: {
+        exactDate: "2026-04-21",
+        exactTime: "07:30",
+        timeWindow: ["18:00-22:00"],
+      },
+      name: "explicit custom window overrides exact time",
+      window: { from: "18:00", preset: "custom", to: "22:00" },
+    },
+    {
+      dateRange: { from: "2026-04-22", to: "2026-04-22" },
+      input: {
+        exactSlot: "2026-04-22T19:15:00",
+        timeWindow: ["18:00-22:00"],
+      },
+      name: "exact slot date with explicit custom window",
+      window: { from: "18:00", preset: "custom", to: "22:00" },
+    },
+  ])("maps House Help watch filters: $name", ({ dateRange, input, window }) => {
+    const watchInput = slotWatchInputFromHousehelpInput(input);
+
+    expect(resolveDateRange(watchInput, "UTC", now)).toEqual(dateRange);
+    expect(resolveWindow(watchInput)).toEqual(window);
+  });
+
+  it("rejects multiple custom windows for one House Help watch", () => {
+    expect(() =>
+      slotWatchInputFromHousehelpInput({
+        timeWindow: ["06:00-09:00", "18:00-22:00"],
+      })
+    ).toThrow("support one custom time window");
   });
 
   it("filters only open slots inside the watch date and time window", () => {

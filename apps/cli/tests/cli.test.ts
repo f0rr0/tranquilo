@@ -1026,6 +1026,61 @@ describe("CLI integration against a mocked API", () => {
     });
   });
 
+  it("creates a House Help watch with exact date and time filters persisted", async () => {
+    const output = await househelpWatchCreateAction({
+      duration: "60",
+      exactDate: "2026-04-21",
+      exactDuration: true,
+      exactTime: "18:30",
+      json: true,
+      window: "after-work",
+    });
+
+    expect(JSON.parse(output)).toMatchObject({
+      watch: {
+        spec: {
+          dateRange: {
+            from: "2026-04-21",
+            to: "2026-04-21",
+          },
+          itemIds: ["27"],
+          window: {
+            from: "18:30",
+            preset: "custom",
+            to: "18:30",
+          },
+        },
+      },
+    });
+  });
+
+  it("rejects unsupported House Help watch filters before searching slots", async () => {
+    const slotCallCount = calls.filter(
+      (call) =>
+        call.method === "GET" &&
+        new URL(call.url ?? "", baseUrl).pathname ===
+          "/gateway/bookings/slots/by-skill"
+    ).length;
+
+    await expect(
+      househelpWatchCreateAction({
+        date: "2026-04-20",
+        duration: "60",
+        json: true,
+        timeWindow: ["06:00-09:00", "18:00-22:00"],
+      })
+    ).rejects.toMatchObject({ code: "WATCH_TIME_WINDOW_UNSUPPORTED" });
+
+    expect(
+      calls.filter(
+        (call) =>
+          call.method === "GET" &&
+          new URL(call.url ?? "", baseUrl).pathname ===
+            "/gateway/bookings/slots/by-skill"
+      )
+    ).toHaveLength(slotCallCount);
+  });
+
   it("creates a House Help watch with Slack notifications when requested", async () => {
     const output = await househelpWatchCreateAction({
       date: "2026-04-20",

@@ -38,7 +38,7 @@ import {
   househelpPaymentHandoff,
   prepareHousehelpBooking,
   resolveHousehelpOptions,
-  slotWatchWindowFromHousehelpInput,
+  slotWatchInputFromHousehelpInput,
 } from "./househelp";
 import {
   createLoginSession,
@@ -1112,20 +1112,17 @@ export async function househelpWatchCreateAction(
     slackWebhookUrl?: string | undefined;
   }
 ): Promise<string> {
+  const watchInput = slotWatchInputFromHousehelpInput(options);
   const resolved = await findHousehelpSlots(options);
   const watch = await createSlotWatch({
     addressId: resolved.location.addressId,
-    date: options.date,
-    ...slotWatchWindowFromHousehelpInput(options),
-    fromDate: options.fromDate,
+    ...watchInput,
     item: resolved.queryListingIds,
     lat: resolved.location.addressId ? undefined : resolved.location.lat,
     lng: resolved.location.addressId ? undefined : resolved.location.lng,
     name: options.name,
     desktopNotify: options.desktopNotify,
-    preset: options.preset,
     slackWebhookUrl: options.slackWebhookUrl,
-    toDate: options.toDate,
   });
   if (options.json) {
     return json({ watch });

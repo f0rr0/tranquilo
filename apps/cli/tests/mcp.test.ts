@@ -142,6 +142,32 @@ describe("MCP server", () => {
     }
   });
 
+  it("validates unsupported House Help watch filters before backend work", async () => {
+    const server = createMcpServer() as unknown as {
+      _registeredTools: Record<
+        string,
+        { handler: (args: Record<string, unknown>) => Promise<unknown> }
+      >;
+    };
+    const watchCreate = server._registeredTools.househelp_watch_create;
+    if (!watchCreate) {
+      throw new Error("Expected househelp_watch_create to be registered.");
+    }
+
+    const result = (await watchCreate.handler({
+      timeWindow: ["06:00-09:00", "18:00-22:00"],
+    })) as {
+      isError?: boolean;
+      structuredContent?: Record<string, unknown>;
+    };
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toMatchObject({
+      error: { code: "WATCH_TIME_WINDOW_UNSUPPORTED" },
+      ok: false,
+    });
+  });
+
   it("supports two-step agent OTP login and stores credentials locally", async () => {
     const originalEnv = { ...process.env };
     const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "tranquilo-mcp-"));

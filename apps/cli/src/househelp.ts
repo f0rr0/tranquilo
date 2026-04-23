@@ -114,11 +114,20 @@ interface TimeWindow {
   to: string;
 }
 
-interface SlotWatchWindowInput {
+interface SlotWatchFilterInput {
+  date?: string | undefined;
   from?: string | undefined;
+  fromDate?: string | undefined;
+  preset?: HousehelpDatePreset | undefined;
   timeWindow?: HousehelpWindow | undefined;
   to?: string | undefined;
+  toDate?: string | undefined;
 }
+
+type SlotWatchWindowInput = Pick<
+  SlotWatchFilterInput,
+  "from" | "timeWindow" | "to"
+>;
 
 function asObject(value: unknown): JsonObject | undefined {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -467,7 +476,7 @@ function resolveWindows(input: HousehelpFindInput): TimeWindow[] {
   ];
 }
 
-export function slotWatchWindowFromHousehelpInput(
+function slotWatchWindowFromHousehelpInput(
   input: Pick<HousehelpFindInput, "timeWindow" | "window">
 ): SlotWatchWindowInput {
   let explicit: string[] = [];
@@ -487,6 +496,66 @@ export function slotWatchWindowFromHousehelpInput(
     return { from: window.from, to: window.to };
   }
   return { timeWindow: input.window };
+}
+
+export function slotWatchInputFromHousehelpInput(
+  input: Pick<
+    HousehelpFindInput,
+    | "around"
+    | "date"
+    | "exactDate"
+    | "exactSlot"
+    | "exactTime"
+    | "flexDays"
+    | "fromDate"
+    | "preset"
+    | "timeWindow"
+    | "toDate"
+    | "window"
+  >
+): SlotWatchFilterInput {
+  let windowInput = slotWatchWindowFromHousehelpInput(input);
+  const hasExplicitTimeWindow = Array.isArray(input.timeWindow)
+    ? input.timeWindow.length > 0
+    : Boolean(input.timeWindow);
+  if (input.exactSlot) {
+    const slot = Temporal.PlainDateTime.from(formatSlotTime(input.exactSlot));
+    if (hasExplicitTimeWindow) {
+      return { ...windowInput, date: slot.toPlainDate().toString() };
+    }
+    const time = slot.toPlainTime().toString({ smallestUnit: "minute" });
+    return {
+      date: slot.toPlainDate().toString(),
+      from: time,
+      to: time,
+    };
+  }
+  if (input.exactTime && !hasExplicitTimeWindow) {
+    const time = parseTime(input.exactTime, "--exact-time");
+    windowInput = { from: time, to: time };
+  }
+  if (input.exactDate) {
+    return { ...windowInput, date: input.exactDate };
+  }
+  if (input.date) {
+    return { ...windowInput, date: input.date };
+  }
+  if (input.around) {
+    const range = resolveDateRange(input);
+    return {
+      ...windowInput,
+      fromDate: range.from.toString(),
+      toDate: range.to.toString(),
+    };
+  }
+  if (input.fromDate || input.toDate) {
+    return {
+      ...windowInput,
+      fromDate: input.fromDate,
+      toDate: input.toDate,
+    };
+  }
+  return { ...windowInput, preset: input.preset };
 }
 
 function slotDateTime(slot: SlotRow): Temporal.PlainDateTime | undefined {

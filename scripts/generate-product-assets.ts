@@ -625,6 +625,8 @@ Watches poll for slots without keeping a resident JavaScript daemon in memory. T
   Watches are notify-only. They do not create checkout and do not pay automatically.
 </Note>
 
+Watch creation persists the House Help filters you pass. ${code("--date")} and ${code("--exact-date")} create one-day watches, ${code("--exact-time")} and ${code("--exact-slot")} create exact start-time windows, and ${code("--around")} with ${code("--flex-days")} becomes a concrete date range. A watch can store one custom ${code("--time-window")}; create separate watches for multiple custom windows.
+
 ${sh("tranquilo househelp watch create --duration 60 --preset next-4-days --time-window 18:00-22:00 --address-id 990330\ntranquilo househelp watch scheduler install")}
 
 ## Watch subcommands

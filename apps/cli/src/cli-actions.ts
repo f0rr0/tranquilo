@@ -1,4 +1,5 @@
 import { confirm, input, password, select } from "@inquirer/prompts";
+import { PACKAGE_METADATA } from "@tranquilo/cli-model/release-metadata";
 import { createTable, type TableCell } from "@visulima/tabular";
 import { ROUNDED_BORDER } from "@visulima/tabular/style";
 import { bold, cyan, dim, green, red, yellow } from "yoctocolors";
@@ -45,6 +46,7 @@ import {
   deleteLoginSession,
   getLoginSession,
 } from "./login-session";
+import { configPath } from "./paths";
 import { rememberedUpiApp, rememberUpiApp } from "./payment-preferences";
 import { assertScheduledServiceable } from "./serviceability";
 import {
@@ -1519,7 +1521,7 @@ export async function slotWatchSchedulerAction(
 }
 
 export async function doctorAction(
-  options: { secrets?: boolean | undefined } = {}
+  options: { json?: boolean | undefined; secrets?: boolean | undefined } = {}
 ): Promise<string> {
   const cfg = await ensureConfig();
   const secrets = options.secrets
@@ -1527,11 +1529,13 @@ export async function doctorAction(
     : undefined;
   const credentials = secrets?.[0];
   const storage = secrets?.[1];
-  return json({
+  const payload = {
     ok: true,
+    version: PACKAGE_METADATA.version,
     node: process.version,
     platform: process.platform,
     arch: process.arch,
+    configPath: configPath(),
     config: cfg,
     secretsChecked: options.secrets === true,
     ...(options.secrets
@@ -1540,7 +1544,26 @@ export async function doctorAction(
           storage,
         }
       : {}),
-  });
+  };
+  if (options.json) {
+    return json(payload);
+  }
+  return [
+    `${bold("Tranquilo")} ${PACKAGE_METADATA.version}`,
+    `Platform: ${process.platform} ${process.arch}`,
+    `Node: ${process.version}`,
+    `Config: ${configPath()}`,
+    `API: ${cfg.baseUrl}`,
+    options.secrets
+      ? `Authenticated: ${credentials?.accessToken ? "yes" : "no"}`
+      : undefined,
+    options.secrets
+      ? `Credentials file: ${storage?.fallbackFileExists ? "present" : "missing"}`
+      : undefined,
+    "",
+  ]
+    .filter((line) => line !== undefined)
+    .join("\n");
 }
 
 function telemetryStatusLabel(status: {
@@ -1570,11 +1593,6 @@ export async function telemetryStatusAction(
   return [
     `Telemetry: ${telemetryStatusLabel(status)}`,
     `Pending events: ${status.pendingEvents}`,
-    status.noticeShownAt ? `Notice shown: ${status.noticeShownAt}` : undefined,
-    status.debug ? "Debug mode: on" : undefined,
-    status.disabledByEnv
-      ? "Disable env override: TRANQUILO_NO_TELEMETRY=1"
-      : undefined,
     "",
   ]
     .filter((line) => line !== undefined)
@@ -1591,7 +1609,7 @@ export async function telemetryEnableAction(
     return json(status);
   }
   return status.disabledByEnv
-    ? "Telemetry preference saved as enabled, but an environment override is currently disabling sends.\n"
+    ? "Telemetry enabled, but `TRANQUILO_NO_TELEMETRY=1` is set.\n"
     : "Telemetry enabled.\n";
 }
 

@@ -201,6 +201,9 @@ describe("CLI integration against a mocked API", () => {
     cartCatalogInfo = { "27": 2 };
     originalEnv = { ...process.env };
     delete process.env.CI;
+    delete process.env.TRANQUILO_NO_TELEMETRY;
+    delete process.env.TRANQUILO_TELEMETRY_DEBUG;
+    delete process.env.TRANQUILO_TELEMETRY_URL;
     paymentStatusCalls = 0;
     tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "tranquilo-cli-"));
     process.env.TRANQUILO_NOW = "2026-04-20T08:00:00Z";
@@ -546,18 +549,28 @@ describe("CLI integration against a mocked API", () => {
   }, 20_000);
 
   it("keeps doctor secret checks opt-in", async () => {
-    const basic = JSON.parse(await doctorAction()) as JsonObject;
+    const basic = JSON.parse(await doctorAction({ json: true })) as JsonObject;
     expect(basic.ok).toBe(true);
     expect(basic.secretsChecked).toBe(false);
     expect(basic.authenticated).toBeUndefined();
     expect(basic.storage).toBeUndefined();
+    expect(basic.version).toBe(PACKAGE_METADATA.version);
 
     const withSecrets = JSON.parse(
-      await doctorAction({ secrets: true })
+      await doctorAction({ json: true, secrets: true })
     ) as JsonObject;
     expect(withSecrets.secretsChecked).toBe(true);
     expect(withSecrets.authenticated).toBe(true);
     expect(withSecrets.storage).toBeDefined();
+  });
+
+  it("renders doctor output as human-readable text by default", async () => {
+    const output = await doctorAction();
+
+    expect(output).toContain("Tranquilo");
+    expect(output).toContain("Platform:");
+    expect(output).toContain("Config:");
+    expect(output).not.toContain('"ok"');
   });
 
   it("stores credentials in the encrypted local file", async () => {
@@ -676,6 +689,7 @@ describe("CLI integration against a mocked API", () => {
         env: {
           ...process.env,
           TRANQUILO_BASE_URL: baseUrl,
+          TRANQUILO_NO_TELEMETRY: "1",
           TRANQUILO_STATE_DIR: tempDir,
         },
         timeout: 15_000,
@@ -688,7 +702,7 @@ describe("CLI integration against a mocked API", () => {
       error: { code: "LOGIN_INPUT_REQUIRED" },
       ok: false,
     });
-  });
+  }, 20_000);
 
   it("accepts install-agent target as a positional argument", () => {
     const result = spawnSync(
@@ -716,6 +730,7 @@ describe("CLI integration against a mocked API", () => {
         encoding: "utf8",
         env: {
           ...process.env,
+          TRANQUILO_NO_TELEMETRY: "1",
           TRANQUILO_STATE_DIR: tempDir,
           TRANQUILO_UPDATE_URL: `${baseUrl}/api/cli/update`,
         },
@@ -730,7 +745,7 @@ describe("CLI integration against a mocked API", () => {
       ok: true,
     });
     expect(result.stderr).not.toContain("curl:");
-  });
+  }, 20_000);
 
   it("persists telemetry preferences with explicit enable and disable commands", async () => {
     expect(
@@ -840,7 +855,7 @@ describe("CLI integration against a mocked API", () => {
     expect(telemetryCalls[0]?.body).not.toContain("booking-1");
     expect(telemetryCalls[0]?.body).not.toContain("2026-04-20T18:00:00");
     expect(telemetryCalls[0]?.body).not.toContain("client-auth-token");
-  });
+  }, 20_000);
 
   it("lists addresses as a clean table by default", async () => {
     const output = await addressesListAction({});

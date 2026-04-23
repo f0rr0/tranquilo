@@ -69,10 +69,7 @@ function normalizeBooleanEnv(value: string | undefined): boolean {
 function telemetryDisabledByEnv(): boolean {
   return (
     Boolean(process.env.CI) ||
-    normalizeBooleanEnv(process.env.TRANQUILO_NO_TELEMETRY) ||
-    normalizeBooleanEnv(process.env.TRANQUILO_TELEMETRY_DISABLED) ||
-    normalizeBooleanEnv(process.env.DO_NOT_TRACK) ||
-    normalizeBooleanEnv(process.env.DNT)
+    normalizeBooleanEnv(process.env.TRANQUILO_NO_TELEMETRY)
   );
 }
 
@@ -252,12 +249,8 @@ function telemetryCommand(): { args: string[]; command: string } {
 
 function telemetryNotice(): string {
   return [
-    "Tranquilo can send anonymized usage telemetry to improve the CLI.",
-    "Collected events are limited to successful installs and confirmed bookings, and use a random local installation ID.",
-    "Included fields are limited to CLI version, OS, CPU architecture, and booking duration.",
-    "Tranquilo never sends addresses, booking IDs, order IDs, slot times, payment URIs, auth tokens, file paths, or command arguments.",
-    "Disable: `tranquilo telemetry disable` or `TRANQUILO_NO_TELEMETRY=1`.",
-    "Preview without sending: `TRANQUILO_TELEMETRY_DEBUG=1`.",
+    "Tranquilo collects anonymous telemetry for successful installs and confirmed bookings.",
+    "Disable with `tranquilo telemetry disable`.",
     "",
   ].join("\n");
 }

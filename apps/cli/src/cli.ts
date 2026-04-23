@@ -1062,13 +1062,19 @@ export const mainCommand = defineCommand({
     doctor: defineCommand({
       meta: { name: "doctor", description: "Check local setup" },
       args: {
+        json: { type: "boolean", description: "Print JSON" },
         secrets: {
           type: "boolean",
           description: "Also check credential storage and auth state",
         },
       },
       run: ({ args }) =>
-        writeResult(doctorAction({ secrets: args.secrets === true })),
+        writeResult(
+          doctorAction({
+            json: args.json === true,
+            secrets: args.secrets === true,
+          })
+        ),
     }),
     mcp: defineCommand({
       meta: { name: "mcp", description: "Run the local stdio MCP server" },

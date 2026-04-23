@@ -24,21 +24,6 @@ function Background() {
   );
 }
 
-function MotifLines() {
-  return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute top-[20%] right-[10%] z-[2] flex h-[100px] w-[100px] flex-col items-end opacity-20 max-md:top-10 max-md:right-6 max-md:h-auto max-md:w-16"
-    >
-      <span className="landing-motif-line w-full" />
-      <span className="landing-motif-line w-4/5" />
-      <span className="landing-motif-line w-3/5" />
-      <span className="landing-motif-line w-[90%]" />
-      <span className="landing-motif-line w-2/5" />
-    </div>
-  );
-}
-
 function SystemCoordinates() {
   return (
     <>
@@ -74,6 +59,14 @@ function Header() {
         >
           DOCUMENTATION
         </Link>
+        <a
+          className="text-[#2c1a0e] no-underline transition-opacity hover:opacity-60"
+          href="https://github.com/f0rr0/tranquilo"
+          rel="noreferrer"
+          target="_blank"
+        >
+          GITHUB
+        </a>
       </nav>
     </header>
   );
@@ -271,7 +264,7 @@ function ProntoWordmark() {
 
 function Hero() {
   return (
-    <section className="col-[2/7] flex min-w-0 max-w-full flex-col gap-12 self-center max-md:mb-20 max-md:w-full max-md:gap-10 max-lg:col-[1/7]">
+    <section className="col-[2/6] flex min-w-0 max-w-full flex-col gap-12 self-center max-md:mb-20 max-md:w-full max-md:gap-10 max-lg:col-[1/6]">
       <div>
         <h1 className="mb-4 font-landing-script font-normal text-[76px] leading-[1.1] tracking-normal max-md:mb-6 max-md:text-[52px] max-md:leading-[1.05] max-lg:text-[68px]">
           Ask for house help.
@@ -279,10 +272,10 @@ function Hero() {
           Then relax.
         </h1>
         <p className="m-0 max-w-[80%] font-landing-sans text-[#2c1a0e] text-[14px] leading-[1.6] opacity-80 max-md:max-w-none max-md:pr-4">
-          Tranquilo means calm. Ask Codex or Claude for <ProntoWordmark />
-          {
-            " house help; it keeps watching when slots are gone and brings you back when one is ready to book."
-          }
+          Ask Codex or Claude for <ProntoWordmark /> house help in plain words.
+          If the right slot is gone, Tranquilo keeps watching quietly, brings
+          you back when one opens, and lets you finish booking and payment in
+          the same AI session.
         </p>
       </div>
       <InstallBlock />
@@ -290,83 +283,41 @@ function Hero() {
   );
 }
 
-function LogEntry({
-  children,
-  label,
-}: Readonly<{
-  children: ReactNode;
-  label: string;
-}>) {
+function DemoVideo() {
   return (
-    <article>
-      <div className="mb-4 flex justify-between border-[#2c1a0e]/20 border-b pb-1 max-md:mb-3 max-md:pb-1.5">
-        <Label>{label}</Label>
+    <figure className="relative mt-6 min-w-0 max-md:mt-5">
+      <div aria-hidden="true" className="landing-demo-aura" />
+      <div className="landing-demo-shell">
+        <div className="overflow-hidden rounded-[24px] bg-[#120f0d]">
+          <video
+            aria-label="Tranquilo product demo"
+            autoPlay
+            className="landing-demo-video"
+            controls
+            loop
+            muted
+            playsInline
+            poster="/demo-poster.jpg"
+            preload="metadata"
+          >
+            <source src="/demo.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
       </div>
-      <p className="m-0 font-landing-sans text-[12px] leading-[1.5] opacity-80">
-        {children}
-      </p>
-    </article>
-  );
-}
-
-function TerminalRow({
-  children,
-  prompt,
-}: Readonly<{
-  children?: ReactNode;
-  prompt?: boolean;
-}>) {
-  return (
-    <div className="mb-2 flex min-w-0 last:mb-0">
-      <span className="w-5 shrink-0 text-[#2c1a0e]/50">
-        {prompt ? ">" : undefined}
-      </span>
-      <span className="min-w-0 flex-1 text-[#2c1a0e] [overflow-wrap:anywhere]">
-        {children}
-      </span>
-    </div>
-  );
-}
-
-function TerminalVisual() {
-  return (
-    <div className="mt-4 min-w-0 overflow-hidden border border-[#2c1a0e]/20 bg-[#e3d2b9]/40 p-4 text-[9px] max-md:mt-5 max-md:p-3.5 max-md:leading-[1.6]">
-      <TerminalRow prompt>
-        <span className="text-[#2c1a0e]/50 [overflow-wrap:anywhere]">
-          tranquilo househelp watch create --duration 60 --window after-work
-        </span>
-      </TerminalRow>
-      <TerminalRow>No slot yet.</TerminalRow>
-      <TerminalRow>Watching quietly.</TerminalRow>
-      <TerminalRow>We will notify you when one opens.</TerminalRow>
-      <TerminalRow prompt>
-        <span className="landing-cursor inline-block h-2.5 w-1.5 bg-[#a87966] align-middle" />
-      </TerminalRow>
-    </div>
+    </figure>
   );
 }
 
 function Logs() {
   return (
-    <section className="col-[8/12] flex min-w-0 max-w-full flex-col gap-16 self-center max-md:mb-20 max-md:w-full max-md:gap-14 max-lg:col-[7/13]">
-      <LogEntry label="Ask">
-        Ask Codex or Claude for house help in normal words. Tranquilo turns that
-        into the right House Help search.
-      </LogEntry>
-      <article>
+    <section className="col-[7/12] flex min-w-0 max-w-full flex-col self-center max-md:mb-20 max-md:w-full max-lg:col-[6/13]">
+      <article className="w-full">
         <div className="mb-4 flex justify-between border-[#2c1a0e]/20 border-b pb-1 max-md:mb-3 max-md:pb-1.5">
-          <Label>Relax</Label>
+          <Label>Ask, Relax, Book</Label>
         </div>
-        <p className="m-0 font-landing-sans text-[12px] leading-[1.5] opacity-80">
-          If the good times are gone, Tranquilo keeps checking quietly and lets
-          you know when a slot opens.
-        </p>
-        <TerminalVisual />
+        <DemoVideo />
       </article>
-      <LogEntry label="Book">
-        Pick the time, choose your UPI app, and finish payment right there in
-        the AI session.
-      </LogEntry>
     </section>
   );
 }
@@ -396,7 +347,6 @@ export default function Page() {
     <>
       <Background />
       <SystemCoordinates />
-      <MotifLines />
       <main className="relative z-10 box-border grid min-h-screen w-full min-w-0 max-w-full grid-cols-12 grid-rows-[auto_1fr_auto] gap-8 overflow-hidden p-8 max-md:mx-6 max-md:flex max-md:min-h-dvh max-md:w-[calc(100vw-48px)] max-md:flex-col max-md:gap-0 max-md:p-0 max-md:pt-6 max-md:pb-10">
         <Header />
         <Hero />

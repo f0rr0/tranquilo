@@ -5,6 +5,7 @@ import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { PACKAGE_METADATA } from "@tranquilo/cli-model/release-metadata";
 import open from "open";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { terminalQr } from "../src/checkout";
@@ -21,6 +22,11 @@ import {
   loginAction,
   loginStartAction,
   loginVerifyAction,
+  telemetryDisableAction,
+  telemetryEnableAction,
+  telemetryFlushAction,
+  telemetryRecordInstallAction,
+  telemetryStatusAction,
 } from "../src/cli-actions";
 import {
   clearCredentials,
@@ -28,6 +34,7 @@ import {
   loadCredentials,
   saveCredentials,
 } from "../src/storage";
+import { maybeFlushTelemetry } from "../src/telemetry";
 import type { Credentials, JsonObject } from "../src/types";
 
 vi.mock("open", () => ({ default: vi.fn(() => Promise.resolve()) }));
@@ -36,6 +43,8 @@ const ANSI_PATTERN = new RegExp(
   `${String.fromCharCode(27)}\\[[0-?]*[ -/]*[@-~]`,
   "g"
 );
+const ANONYMOUS_ID_RE = /^anon_/u;
+const CLI_VERSION = PACKAGE_METADATA.version;
 const CUSTOM_QUADRANT_QR_PATTERN = /[▘▝▖▗▚▞▛▜▙▟]/;
 
 interface ServerCall {
@@ -191,6 +200,7 @@ describe("CLI integration against a mocked API", () => {
     activeAddressId = "988639";
     cartCatalogInfo = { "27": 2 };
     originalEnv = { ...process.env };
+    delete process.env.CI;
     paymentStatusCalls = 0;
     tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "tranquilo-cli-"));
     process.env.TRANQUILO_NOW = "2026-04-20T08:00:00Z";
@@ -214,6 +224,10 @@ describe("CLI integration against a mocked API", () => {
             releaseNotesUrl: "https://github.com/example/releases/v0.1.0",
             updateAvailable: false,
           });
+          return;
+        }
+        if (req.method === "POST" && url.pathname === "/api/cli/telemetry") {
+          jsonResponse(res, { ok: true });
           return;
         }
         if (req.method === "POST" && url.pathname === "/gateway/auth/login") {
@@ -716,6 +730,116 @@ describe("CLI integration against a mocked API", () => {
       ok: true,
     });
     expect(result.stderr).not.toContain("curl:");
+  });
+
+  it("persists telemetry preferences with explicit enable and disable commands", async () => {
+    expect(
+      JSON.parse(await telemetryStatusAction({ json: true }))
+    ).toMatchObject({
+      effectiveEnabled: false,
+      pendingEvents: 0,
+    });
+
+    expect(
+      JSON.parse(await telemetryEnableAction({ json: true }))
+    ).toMatchObject({
+      effectiveEnabled: true,
+      enabled: true,
+    });
+
+    expect(
+      JSON.parse(await telemetryDisableAction({ json: true }))
+    ).toMatchObject({
+      effectiveEnabled: false,
+      enabled: false,
+    });
+  });
+
+  it("records install telemetry once without sending sensitive fields", async () => {
+    process.env.TRANQUILO_TELEMETRY_URL = `${baseUrl}/api/cli/telemetry`;
+    calls = [];
+
+    await telemetryEnableAction();
+    await telemetryRecordInstallAction({ agentTarget: "auto" });
+    await telemetryRecordInstallAction({ agentTarget: "auto" });
+    await telemetryFlushAction();
+
+    const telemetryCalls = calls.filter(
+      (call) =>
+        call.method === "POST" &&
+        new URL(call.url ?? "", baseUrl).pathname === "/api/cli/telemetry"
+    );
+    expect(telemetryCalls).toHaveLength(1);
+
+    const payload = JSON.parse(telemetryCalls[0]?.body ?? "{}") as {
+      events: Array<{
+        anonymousId: string;
+        event: string;
+        properties: Record<string, unknown>;
+      }>;
+    };
+    expect(payload.events).toHaveLength(1);
+    expect(payload.events[0]).toMatchObject({
+      anonymousId: expect.stringMatching(ANONYMOUS_ID_RE),
+      event: "install_succeeded",
+      properties: {
+        agentTarget: "auto",
+        arch: process.arch,
+        cliVersion: CLI_VERSION,
+        os: process.platform,
+        transport: "install_sh",
+      },
+    });
+    expect(telemetryCalls[0]?.body).not.toContain("order-1");
+    expect(telemetryCalls[0]?.body).not.toContain("booking-1");
+  });
+
+  it("records confirmed booking telemetry without leaking order ids or slots", async () => {
+    process.env.TRANQUILO_TELEMETRY_URL = `${baseUrl}/api/cli/telemetry`;
+    calls = [];
+
+    await telemetryEnableAction();
+    await househelpBookAction({
+      date: "2026-04-20",
+      duration: "60",
+      intervalMs: 1,
+      json: true,
+      noInteractive: true,
+      pay: true,
+      slot: "20 Apr 2026 6pm",
+      timeoutMs: 250,
+      upiApp: "googlepay",
+      window: "after-work",
+    });
+    await maybeFlushTelemetry();
+
+    const telemetryCalls = calls.filter(
+      (call) =>
+        call.method === "POST" &&
+        new URL(call.url ?? "", baseUrl).pathname === "/api/cli/telemetry"
+    );
+    expect(telemetryCalls).toHaveLength(1);
+
+    const payload = JSON.parse(telemetryCalls[0]?.body ?? "{}") as {
+      events: Array<{
+        event: string;
+        properties: Record<string, unknown>;
+      }>;
+    };
+    expect(payload.events).toHaveLength(1);
+    expect(payload.events[0]).toMatchObject({
+      event: "booking_confirmed",
+      properties: {
+        arch: process.arch,
+        cliVersion: CLI_VERSION,
+        durationMinutes: 60,
+        os: process.platform,
+      },
+    });
+    expect(telemetryCalls[0]?.body).not.toContain("order-1");
+    expect(telemetryCalls[0]?.body).not.toContain("booking-1");
+    expect(telemetryCalls[0]?.body).not.toContain("2026-04-20T18:00:00");
+    expect(telemetryCalls[0]?.body).not.toContain("client-auth-token");
   });
 
   it("lists addresses as a clean table by default", async () => {

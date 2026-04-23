@@ -80,3 +80,7 @@ export function fallbackSecretPath(): string {
 export function loginSessionsPath(): string {
   return path.join(stateDir(), "login-sessions.json");
 }
+
+export function telemetryStatePath(): string {
+  return path.join(stateDir(), "telemetry.json");
+}

@@ -3,6 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import { AGENT_CATALOG } from "@tranquilo/cli-model/agent-catalog";
 import { describe, expect, it, vi } from "vitest";
+
+const telemetryMocks = vi.hoisted(() => ({
+  maybeStartBackgroundTelemetryFlush: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock("../src/telemetry", () => telemetryMocks);
+
 import { createMcpServer } from "../src/mcp";
 import { clearCredentials, loadCredentials } from "../src/storage";
 
@@ -257,5 +264,26 @@ describe("MCP server", () => {
       process.env = originalEnv;
       await fsp.rm(tempDir, { force: true, recursive: true });
     }
+  });
+
+  it("starts a background telemetry flush after MCP tool calls", async () => {
+    telemetryMocks.maybeStartBackgroundTelemetryFlush.mockClear();
+
+    const server = createMcpServer() as unknown as {
+      _registeredTools: Record<
+        string,
+        { handler: (args: Record<string, unknown>) => Promise<unknown> }
+      >;
+    };
+    const tool = server._registeredTools.auth_status;
+    if (!tool) {
+      throw new Error("Expected MCP auth_status tool to be registered.");
+    }
+
+    await tool.handler({});
+
+    expect(
+      telemetryMocks.maybeStartBackgroundTelemetryFlush
+    ).toHaveBeenCalledWith(["mcp"]);
   });
 });

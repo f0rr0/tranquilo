@@ -239,9 +239,14 @@ describe("install routes", () => {
     const script = renderInstallSh({
       baseUrl: "https://tranquilo-ai.vercel.app/releases/latest",
     });
+    expect(script).toContain('had_existing="0"');
     expect(script).toContain("Checksum entry missing");
     expect(script).toContain("Checksum mismatch");
     expect(script).toContain("command -v sha256sum");
+    expect(script).toContain(
+      'telemetry record-install --agent-target "$AGENT_TARGET"'
+    );
+    expect(script).toContain("telemetry flush >/dev/null 2>&1 &");
   });
 
   it("uses the bash installer for Windows", async () => {

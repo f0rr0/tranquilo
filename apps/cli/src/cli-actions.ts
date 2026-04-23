@@ -65,6 +65,13 @@ import {
   credentialStorageStatus,
   loadCredentials,
 } from "./storage";
+import {
+  disableTelemetry,
+  enableTelemetry,
+  maybeFlushTelemetry,
+  recordInstallSuccess,
+  telemetryStatus,
+} from "./telemetry";
 import type { BookingStatusPreset, JsonObject } from "./types";
 import { TranquiloError } from "./types";
 import {
@@ -1534,6 +1541,82 @@ export async function doctorAction(
         }
       : {}),
   });
+}
+
+function telemetryStatusLabel(status: {
+  disabledByEnv: boolean;
+  effectiveEnabled: boolean;
+  enabled: boolean | undefined;
+}): string {
+  if (status.effectiveEnabled) {
+    return "enabled";
+  }
+  if (status.disabledByEnv) {
+    return "disabled by environment";
+  }
+  if (status.enabled === false) {
+    return "disabled";
+  }
+  return "not configured";
+}
+
+export async function telemetryStatusAction(
+  options: { json?: boolean | undefined } = {}
+): Promise<string> {
+  const status = await telemetryStatus();
+  if (options.json) {
+    return json(status);
+  }
+  return [
+    `Telemetry: ${telemetryStatusLabel(status)}`,
+    `Pending events: ${status.pendingEvents}`,
+    status.noticeShownAt ? `Notice shown: ${status.noticeShownAt}` : undefined,
+    status.debug ? "Debug mode: on" : undefined,
+    status.disabledByEnv
+      ? "Disable env override: TRANQUILO_NO_TELEMETRY=1"
+      : undefined,
+    "",
+  ]
+    .filter((line) => line !== undefined)
+    .join("\n");
+}
+
+export async function telemetryEnableAction(
+  options: { json?: boolean | undefined } = {}
+): Promise<string> {
+  await enableTelemetry();
+  await maybeFlushTelemetry({ allowDebugOutput: false });
+  const status = await telemetryStatus();
+  if (options.json) {
+    return json(status);
+  }
+  return status.disabledByEnv
+    ? "Telemetry preference saved as enabled, but an environment override is currently disabling sends.\n"
+    : "Telemetry enabled.\n";
+}
+
+export async function telemetryDisableAction(
+  options: { json?: boolean | undefined } = {}
+): Promise<string> {
+  const status = await disableTelemetry();
+  if (options.json) {
+    return json(status);
+  }
+  return status.disabledByEnv
+    ? "Telemetry disabled. Environment overrides also prevent sends.\n"
+    : "Telemetry disabled.\n";
+}
+
+export async function telemetryRecordInstallAction(
+  options: { agentTarget?: string | undefined } = {}
+): Promise<string> {
+  await recordInstallSuccess({ agentTarget: options.agentTarget });
+  return "";
+}
+
+export async function telemetryFlushAction(): Promise<string> {
+  await maybeFlushTelemetry();
+  return "";
 }
 
 export async function installAgentAction(target: string): Promise<string> {

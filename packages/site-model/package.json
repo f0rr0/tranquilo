@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./cli-telemetry": "./src/cli-telemetry.ts",
     "./install-routes": "./src/install-routes.ts"
   },
   "scripts": {

@@ -1,0 +1,6 @@
+{
+  "title": "MCP",
+  "icon": "plug",
+  "defaultOpen": true,
+  "pages": ["tools"]
+}

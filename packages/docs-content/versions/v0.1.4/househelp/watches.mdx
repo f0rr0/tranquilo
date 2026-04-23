@@ -1,0 +1,89 @@
+---
+title: "Watches"
+description: "Notify-only slot watches for transient House Help slots."
+icon: "bell"
+---
+
+
+Watches poll for slots without keeping a resident JavaScript daemon in memory. Tranquilo installs one per-user OS timer and runs short-lived checks.
+
+<Note>
+  Watches are notify-only. They do not create checkout and do not pay automatically.
+</Note>
+
+Watch creation persists the House Help filters you pass. `--date` and `--exact-date` create one-day watches, `--exact-time` and `--exact-slot` create exact start-time windows, and `--around` with `--flex-days` becomes a concrete date range. A watch can store one custom `--time-window`; create separate watches for multiple custom windows.
+
+```sh
+tranquilo househelp watch create --duration 60 --preset next-4-days --time-window 18:00-22:00 --address-id 990330
+tranquilo househelp watch scheduler install
+```
+
+## Watch subcommands
+
+| Subcommand | Description |
+| --- | --- |
+| `tranquilo househelp watch create` | Create House Help watch |
+| `tranquilo househelp watch book <id>` | Book the found slot for a House Help watch |
+| `tranquilo househelp watch list` | List House Help watches |
+| `tranquilo househelp watch show <id>` | Show House Help watch |
+| `tranquilo househelp watch pause <id>` | Pause House Help watch |
+| `tranquilo househelp watch resume <id>` | Resume House Help watch |
+| `tranquilo househelp watch delete <id>` | Delete House Help watch |
+| `tranquilo househelp watch run-now <id>` | Run House Help watch now |
+| `tranquilo househelp watch run-due` | Run due House Help watches |
+| `tranquilo househelp watch scheduler` | Manage the House Help watch OS timer |
+
+## Create flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--address-id <id>` | No | Saved address id |
+| `--lat <lat>` | No | Latitude |
+| `--lng <lng>` | No | Longitude |
+| `--duration <duration>` | No | Preferred duration such as 60, 90m, or 1.5h |
+| `--duration-order <60,90,120,30>` | No | Explicit duration fallback order, comma-separated |
+| `--exact-duration` | No | Only search the requested duration |
+| `--date <YYYY-MM-DD>` | No | Single target date |
+| `--exact-date <YYYY-MM-DD>` | No | Exact target date with no date fallback |
+| `--around <YYYY-MM-DD>` | No | Preferred date center for flexible date search |
+| `--flex-days <n>` | No | Days before/after --around |
+| `--from-date <YYYY-MM-DD>` | No | Target date range start |
+| `--to-date <YYYY-MM-DD>` | No | Target date range end |
+| `--preset <preset>` | No | Date preset Allowed values: `today`, `tomorrow`, `next-4-days`, `weekend`. |
+| `--window <window>` | No | Time window preset Allowed values: `smart`, `before-work`, `after-work`, `weekend`, `any`, `custom`. |
+| `--time-window <HH:mm-HH:mm>` | No | Preferred time window; repeatable |
+| `--exact-time <HH:mm>` | No | Exact start time |
+| `--exact-slot <iso>` | No | Exact slot start time |
+| `--name <name>` | No | Human label for the watch |
+| `--slack-webhook <url>` | No | Slack incoming webhook URL for slot-found notifications |
+| `--desktop-notify / --no-desktop-notify` | No | Send desktop notifications Negated form: Disable desktop notifications. Default: `true`. |
+| `--json` | No | Print JSON |
+| `--no-interactive` | No | Never prompt; fail if more input is required |
+
+## Book found watch
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `<id>` | Yes | Slot watch id |
+| `--pay / --no-pay` | No | Show QR payment UI Negated form: Only create checkout order. Default: `true`. |
+| `--copy-link` | No | Copy the UPI URI to clipboard during payment |
+| `--save-qr <path>` | No | Save payment QR image to path |
+| `--open-qr` | No | Open the saved QR image with the OS image viewer |
+| `--qr-size <size>` | No | Terminal QR size for --pay Allowed values: `compact`, `small`, `normal`. Default: `compact`. |
+| `--upi-app <app>` | No | UPI app to route payment through; required for --pay until a local preference is saved Allowed values: `phonepe`, `googlepay`, `paytm`. |
+| `--interval-ms <ms>` | No | Payment poll interval for --pay |
+| `--timeout-ms <ms>` | No | Payment poll timeout for --pay |
+| `--json` | No | Print JSON |
+| `--no-interactive` | No | Never prompt; fail if more input is required |
+
+## Scheduler subcommands
+
+| Subcommand | Description |
+| --- | --- |
+| `tranquilo househelp watch scheduler install` | Install OS timer |
+| `tranquilo househelp watch scheduler uninstall` | Uninstall OS timer |
+| `tranquilo househelp watch scheduler status` | Show OS timer status |
+
+## Notifications
+
+Desktop notifications are best-effort. Slack notifications are available with `--slack-webhook <url>`. Use `tranquilo househelp watch show <watch-id>` to inspect persisted matches if a notification is missed.

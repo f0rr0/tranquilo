@@ -1,0 +1,6 @@
+{
+  "title": "v0.1.4",
+  "root": true,
+  "defaultOpen": true,
+  "pages": ["index", "install", "auth", "househelp", "manage", "agents"]
+}

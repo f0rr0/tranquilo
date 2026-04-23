@@ -9,6 +9,7 @@ import { createClient, formatSlotTime, resolveLocation } from "./context";
 import { stateDir } from "./paths";
 import { rememberedUpiApp } from "./payment-preferences";
 import { assertScheduledServiceable } from "./serviceability";
+import { recordBookingConfirmed } from "./telemetry";
 import { nowPlainDateTime, systemTimezone, todayPlainDate } from "./time";
 import type { JsonObject } from "./types";
 import { TranquiloError } from "./types";
@@ -963,6 +964,12 @@ async function finalizeChargedOrder(
     status: status === "SUCCESS" || bookingId ? "confirmed" : "charged",
     updatedAt: new Date().toISOString(),
   });
+  if (updated.status === "confirmed") {
+    await recordBookingConfirmed({
+      durationMinutes: updated.selectedDurationMinutes,
+      orderId: updated.orderId,
+    });
+  }
   return {
     booking,
     order: publicCheckoutOrder(updated),

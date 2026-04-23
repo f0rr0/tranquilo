@@ -209,6 +209,10 @@ url="\${BASE_URL}/\${archive}"
 checksum_url="\${BASE_URL}/checksums.txt"
 
 mkdir -p "$BIN_DIR"
+had_existing="0"
+if [ -x "$BIN_DIR/$binary" ]; then
+  had_existing="1"
+fi
 echo "Downloading $url"
 curl -fsSL "$url" -o "$TMP_DIR/$archive"
 curl -fsSL "$checksum_url" -o "$TMP_DIR/checksums.txt"
@@ -260,6 +264,10 @@ if [ "$SKIP_AGENT_INSTALL" != "1" ]; then
   TRANQUILO_PACKAGE_ROOT="$PACKAGE_ROOT" TRANQUILO_MCP_COMMAND="$installed" "$installed" install-agent "$AGENT_TARGET" || {
     echo "AI integration setup was skipped or failed. You can retry with: $installed install-agent auto" >&2
   }
+fi
+if [ "$had_existing" != "1" ]; then
+  TRANQUILO_NO_UPDATE_CHECK=1 "$installed" telemetry record-install --agent-target "$AGENT_TARGET" >/dev/null 2>&1 || true
+  (TRANQUILO_NO_UPDATE_CHECK=1 TRANQUILO_TELEMETRY_FLUSHING=1 "$installed" telemetry flush >/dev/null 2>&1 &) || true
 fi
 `;
 }

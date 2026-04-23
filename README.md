@@ -16,6 +16,8 @@ curl -fsSL https://tranquilo-ai.vercel.app/install.sh | sh
 
 The installer picks the right binary for your platform and configures supported local AI tools when it finds them. Windows users can run the same command from bash through WSL, Git Bash, MSYS2, or Cygwin.
 
+Tranquilo can send anonymized usage telemetry about successful installs and confirmed bookings. It uses a random local installation ID and never sends addresses, booking IDs, order IDs, slot times, payment URIs, auth tokens, file paths, or command arguments. Disable it with `tranquilo telemetry disable` or `TRANQUILO_NO_TELEMETRY=1`.
+
 ## What It Does
 
 - Searches Pronto House Help slots for saved addresses.

@@ -34,9 +34,18 @@ import {
   slotWatchSchedulerAction,
   slotWatchShowAction,
   statusAction,
+  telemetryDisableAction,
+  telemetryEnableAction,
+  telemetryFlushAction,
+  telemetryRecordInstallAction,
+  telemetryStatusAction,
   whoamiAction,
 } from "./cli-actions";
 import { errorToJson } from "./context";
+import {
+  maybeShowTelemetryNotice,
+  maybeStartBackgroundTelemetryFlush,
+} from "./telemetry";
 import { TranquiloError } from "./types";
 import {
   maybePrintUpdateNotice,
@@ -982,6 +991,74 @@ export const mainCommand = defineCommand({
         }),
       },
     }),
+    telemetry: defineCommand({
+      meta: {
+        name: "telemetry",
+        description: "Inspect or change CLI telemetry preferences",
+      },
+      subCommands: {
+        status: defineCommand({
+          meta: { name: "status", description: "Show telemetry status" },
+          args: {
+            json: { type: "boolean", description: "Print JSON" },
+            ...noInteractiveArg,
+          },
+          run: ({ args }) =>
+            writeResult(
+              telemetryStatusAction({ json: args.json as boolean | undefined })
+            ),
+        }),
+        enable: defineCommand({
+          meta: { name: "enable", description: "Enable telemetry" },
+          args: {
+            json: { type: "boolean", description: "Print JSON" },
+            ...noInteractiveArg,
+          },
+          run: ({ args }) =>
+            writeResult(
+              telemetryEnableAction({ json: args.json as boolean | undefined })
+            ),
+        }),
+        disable: defineCommand({
+          meta: { name: "disable", description: "Disable telemetry" },
+          args: {
+            json: { type: "boolean", description: "Print JSON" },
+            ...noInteractiveArg,
+          },
+          run: ({ args }) =>
+            writeResult(
+              telemetryDisableAction({ json: args.json as boolean | undefined })
+            ),
+        }),
+        "record-install": defineCommand({
+          meta: {
+            name: "record-install",
+            description: "Internal helper to record a successful install",
+          },
+          args: {
+            "agent-target": {
+              type: "string",
+              description: "Requested agent install target",
+              valueHint: "target",
+            },
+          },
+          run: ({ args }) =>
+            writeResult(
+              telemetryRecordInstallAction({
+                agentTarget: textArg(args.agentTarget),
+              })
+            ),
+        }),
+        flush: defineCommand({
+          meta: {
+            name: "flush",
+            description: "Internal helper to flush queued telemetry",
+          },
+          run: () => writeResult(telemetryFlushAction()),
+        }),
+      },
+      run: () => writeResult(telemetryStatusAction()),
+    }),
     doctor: defineCommand({
       meta: { name: "doctor", description: "Check local setup" },
       args: {
@@ -1098,7 +1175,9 @@ export async function runCli(argv: string[] = process.argv): Promise<void> {
 
   try {
     await maybePrintUpdateNotice(rawArgs);
+    await maybeShowTelemetryNotice(rawArgs);
     await runCommand(mainCommand, { rawArgs });
+    await maybeStartBackgroundTelemetryFlush(rawArgs);
   } catch (error) {
     process.stderr.write(`${JSON.stringify(errorToJson(error), null, 2)}\n`);
     process.exitCode =

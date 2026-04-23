@@ -46,6 +46,7 @@ import {
   runDueSlotWatches,
 } from "./slot-watch";
 import { loadCredentials } from "./storage";
+import { maybeStartBackgroundTelemetryFlush } from "./telemetry";
 import type { BookingStatusPreset, JsonObject } from "./types";
 import { TranquiloError } from "./types";
 
@@ -85,6 +86,8 @@ async function runTool<T>(fn: () => Promise<T>, message?: string) {
     return toolOk(await fn(), message);
   } catch (error) {
     return toolError(error);
+  } finally {
+    await maybeStartBackgroundTelemetryFlush(["mcp"]);
   }
 }
 

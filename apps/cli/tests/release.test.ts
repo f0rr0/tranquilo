@@ -14,6 +14,7 @@ import {
   isTranquiloAffected,
   shouldRequireChangeset,
 } from "../../../scripts/check-changeset";
+import { metaJson } from "../../../scripts/generate-product-assets";
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -118,6 +119,46 @@ describe("release packaging helpers", () => {
     expect(releaseWorkflow).toContain("force_current_version");
     expect(releaseWorkflow).toContain("cleanup_only=true");
     expect(releaseWorkflow).toContain("Commit no-release changeset cleanup");
+  });
+
+  it("formats generated docs metadata within the formatter line width", () => {
+    expect(
+      metaJson({
+        title: "Tranquilo Docs",
+        pages: ["versions"],
+      })
+    ).toBe(`{
+  "title": "Tranquilo Docs",
+  "pages": ["versions"]
+}
+`);
+
+    expect(
+      metaJson({
+        title: "Versions",
+        pages: [
+          "v0.1.6",
+          "v0.1.5",
+          "v0.1.4",
+          "v0.1.3",
+          "v0.1.2",
+          "v0.1.1",
+          "v0.1.0",
+        ],
+      })
+    ).toBe(`{
+  "title": "Versions",
+  "pages": [
+    "v0.1.6",
+    "v0.1.5",
+    "v0.1.4",
+    "v0.1.3",
+    "v0.1.2",
+    "v0.1.1",
+    "v0.1.0"
+  ]
+}
+`);
   });
 });
 

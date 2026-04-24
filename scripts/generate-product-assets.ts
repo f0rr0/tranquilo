@@ -206,14 +206,29 @@ function frontmatter({
   return `${lines.join("\n")}\n---\n\n`;
 }
 
-function metaJson(value: Record<string, boolean | string | string[]>): string {
+const MAX_META_LINE_LENGTH = 80;
+
+export function metaJson(
+  value: Record<string, boolean | string | string[]>
+): string {
   const entries = Object.entries(value);
   const lines = entries.map(([key, entry], index) => {
     const suffix = index === entries.length - 1 ? "" : ",";
-    const serialized = Array.isArray(entry)
-      ? `[${entry.map((item) => JSON.stringify(item)).join(", ")}]`
-      : JSON.stringify(entry);
-    return `  ${JSON.stringify(key)}: ${serialized}${suffix}`;
+    const prefix = `  ${JSON.stringify(key)}: `;
+    if (!Array.isArray(entry)) {
+      return `${prefix}${JSON.stringify(entry)}${suffix}`;
+    }
+
+    const inline = `[${entry.map((item) => JSON.stringify(item)).join(", ")}]`;
+    if (`${prefix}${inline}${suffix}`.length <= MAX_META_LINE_LENGTH) {
+      return `${prefix}${inline}${suffix}`;
+    }
+
+    const values = entry.map((item, itemIndex) => {
+      const itemSuffix = itemIndex === entry.length - 1 ? "" : ",";
+      return `    ${JSON.stringify(item)}${itemSuffix}`;
+    });
+    return [`${prefix}[`, ...values, `  ]${suffix}`].join("\n");
   });
   return `{\n${lines.join("\n")}\n}\n`;
 }
@@ -354,12 +369,12 @@ function flagRows(
 }
 
 function mcpReference(): string {
-  const rows = MCP_TOOLS.map(
-    (tool) =>
-      `| ${code(tool.name)} | ${
-        tool.annotations.readOnlyHint ? "Read-only" : "Mutating"
-      } | ${tool.cliFallback ? code(tool.cliFallback) : "MCP only"} | ${tableCell(tool.description)} |`
-  ).join("\n");
+  const rows = MCP_TOOLS.map((tool) => {
+    const cliFallback = "cliFallback" in tool ? tool.cliFallback : undefined;
+    return `| ${code(tool.name)} | ${
+      tool.annotations.readOnlyHint ? "Read-only" : "Mutating"
+    } | ${cliFallback ? code(cliFallback) : "MCP only"} | ${tableCell(tool.description)} |`;
+  }).join("\n");
   return `${frontmatter({
     description: "Agent-callable MCP tools exposed by tranquilo mcp.",
     icon: "plug",
@@ -1126,4 +1141,6 @@ async function run(): Promise<void> {
   }
 }
 
-await run();
+if (import.meta.main) {
+  await run();
+}

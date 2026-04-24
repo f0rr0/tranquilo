@@ -14,9 +14,7 @@ It also installs AI-agent integrations, so Codex or Claude Code can understand r
 curl -fsSL https://tranquilo-ai.vercel.app/install.sh | sh
 ```
 
-The installer picks the right binary for your platform and configures supported local AI tools when it finds them. Windows users can run the same command from bash through WSL, Git Bash, MSYS2, or Cygwin.
-
-Tranquilo can send anonymized usage telemetry about successful installs and confirmed bookings. It uses a random local installation ID and never sends addresses, booking IDs, order IDs, slot times, payment URIs, auth tokens, file paths, or command arguments. Disable it with `tranquilo telemetry disable` or `TRANQUILO_NO_TELEMETRY=1`.
+Tranquilo collects anonymous telemetry for successful installs and confirmed bookings. Disable it with `tranquilo telemetry disable`.
 
 ## What It Does
 
@@ -26,12 +24,6 @@ Tranquilo can send anonymized usage telemetry about successful installs and conf
 - Books a selected slot and shows a local QR for UPI payment.
 - Exposes MCP tools and agent docs for safe AI-assisted booking.
 
-Tranquilo is the CLI/MCP wrapper. Pronto is the consumer app and backend.
-
 ## Docs
 
 Start with the [Tranquilo docs](https://tranquilo-ai.vercel.app/docs) for setup, CLI commands, AI-agent usage, watches, payments, and release notes.
-
-## Status
-
-Tranquilo is built around the captured Pronto House Help flow. It does not implement coupons, cancellation, rescheduling, address creation/editing, or unattended payment.

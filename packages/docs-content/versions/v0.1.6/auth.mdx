@@ -1,0 +1,71 @@
+---
+title: "Auth"
+description: "Login, credential storage, and local status commands."
+icon: "key-round"
+---
+
+
+Tranquilo authenticates with Pronto using the phone OTP flow captured from the app. Credentials are stored in an encrypted local file under Tranquilo's state directory, with non-secret config in the local app config directory.
+
+<Warning>
+  OTP is allowed only for the Tranquilo login flow. Agents may ask for your phone number and Pronto OTP, then call `auth_login_start` and `auth_login_verify`. Never paste access tokens, refresh tokens, UPI details, or payment data into chat.
+</Warning>
+
+## Local commands
+
+| Command | Description |
+| --- | --- |
+| `tranquilo login` | Start phone OTP login and store credentials |
+| `tranquilo logout` | Clear stored credentials |
+| `tranquilo status` | Show auth and config status |
+| `tranquilo whoami` | Show current user profile |
+| `tranquilo doctor` | Check local setup |
+
+### Login flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--phone <number>` | No | Mobile number |
+| `--otp <code>` | No | OTP code for non-interactive or agent login |
+| `--json` | No | Print JSON |
+| `--no-interactive` | No | Never prompt; fail if more input is required |
+
+### Login subcommands
+
+| Subcommand | Description |
+| --- | --- |
+| `tranquilo login start` | Send OTP and create a short-lived login session |
+| `tranquilo login verify` | Verify OTP for a pending login session |
+
+### Login start flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--phone <number>` | No | Mobile number |
+| `--json` | No | Print JSON |
+| `--no-interactive` | No | Never prompt; fail if more input is required |
+
+### Login verify flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--session <id>` | No | Login session id from login start |
+| `--otp <code>` | No | OTP code for the pending login session |
+| `--json` | No | Print JSON |
+| `--no-interactive` | No | Never prompt; fail if more input is required |
+
+### Status flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--json` | No | Print JSON |
+| `--no-interactive` | No | Never prompt; fail if more input is required |
+
+### Doctor flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `--json` | No | Print JSON |
+| `--secrets` | No | Also check credential storage and auth state |
+
+Use `tranquilo status --json --no-interactive` only as a CLI fallback for agents when MCP is unavailable.

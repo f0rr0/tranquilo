@@ -1,0 +1,50 @@
+---
+title: "Payments"
+description: "QR-first local payment flow for prepared checkout orders."
+icon: "qr-code"
+---
+
+
+Payment is user-local. Tranquilo routes direct UPI payment through a user-selected UPI app, renders a QR/link from Juspay, then polls payment status and calls Pronto finalization after a successful charge.
+
+```sh
+tranquilo checkout pay <order-id> --open-qr --upi-app phonepe
+```
+
+Allowed UPI apps are `phonepe`, `googlepay`, and `paytm`. The first selection is stored locally and reused for later payments; pass `--upi-app` again to change it.
+
+Use `--open-qr` in terminal agents such as Codex CLI. Tranquilo still prints the terminal QR and saved PNG path, but opening the PNG is the most reliable way to make the QR visible when long command output is collapsed.
+
+<Warning>
+  Do not run `--open-intent` from an agent unless the user explicitly asks for local OS/app opening. It is intentionally not part of the default agent-safe flow.
+</Warning>
+
+## Checkout subcommands
+
+| Subcommand | Description |
+| --- | --- |
+| `tranquilo checkout pay <order-id>` | Render QR and watch payment status |
+| `tranquilo checkout status <order-id>` | Check checkout payment status |
+
+## Pay flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `<order-id>` | Yes | Checkout order id |
+| `--copy-link` | No | Copy the UPI URI to clipboard |
+| `--save-qr <path>` | No | Save QR image to path |
+| `--open-intent` | No | Best-effort OS open of the UPI intent |
+| `--open-qr` | No | Open the saved QR image with the OS image viewer |
+| `--qr-size <size>` | No | Terminal QR size Allowed values: `compact`, `small`, `normal`. Default: `compact`. |
+| `--upi-app <app>` | No | UPI app to route payment through; required until a local preference is saved Allowed values: `phonepe`, `googlepay`, `paytm`. |
+| `--watch / --no-watch` | No | Poll payment status and finalize booking Negated form: Only render payment instructions. Default: `true`. |
+| `--json` | No | Print JSON |
+| `--no-interactive` | No | Never prompt; fail if more input is required |
+
+## Status flags
+
+| Flag | Required | Description |
+| --- | --- | --- |
+| `<order-id>` | Yes | Checkout order id |
+| `--watch` | No | Poll until final status or timeout |
+| `--json` | No | Print JSON |

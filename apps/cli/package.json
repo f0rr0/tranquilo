@@ -1,6 +1,6 @@
 {
   "name": "tranquilo",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "First-party Tranquilo CLI and local MCP server",
   "type": "module",
   "main": "dist/index.js",

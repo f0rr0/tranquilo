@@ -1,6 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import release from "../generated/release.json";
 
 interface ReleaseMetadata {
   docsUrl?: string;
@@ -9,18 +7,8 @@ interface ReleaseMetadata {
 
 const TRAILING_SLASH_RE = /\/+$/;
 
-function generatedRelease(): ReleaseMetadata {
-  try {
-    const configDir = path.dirname(fileURLToPath(import.meta.url));
-    const releasePath = path.join(configDir, "../generated/release.json");
-    return JSON.parse(fs.readFileSync(releasePath, "utf8")) as ReleaseMetadata;
-  } catch {
-    return {};
-  }
-}
-
 export function latestDocsPath(): string {
-  return resolveLatestDocsPath(generatedRelease());
+  return resolveLatestDocsPath(release);
 }
 
 export function resolveLatestDocsPath(release: ReleaseMetadata): string {

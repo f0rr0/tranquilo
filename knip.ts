@@ -25,6 +25,7 @@ const config: KnipConfig = {
         "app/**/page.tsx!",
         "app/**/layout.tsx!",
         "app/**/route.ts!",
+        "lib/**/*.test.ts",
         "source.config.ts!",
       ],
       project: ["app/**/*.{ts,tsx}", "components/**/*.tsx", "lib/**/*.ts"],
@@ -54,6 +55,7 @@ const config: KnipConfig = {
     "apps/site/app/docs/layout.tsx": ["exports"],
     "apps/site/next.config.ts": ["exports"],
     "apps/site/source.config.ts": ["exports"],
+    "apps/site/lib/release.ts": ["exports"],
   },
   ignoreBinaries: [
     "gh",
